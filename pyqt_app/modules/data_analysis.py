@@ -52,6 +52,8 @@ class MatplotlibCanvas(FigureCanvas):
 class TestDataModel(QAbstractTableModel):
     """Model for displaying test data in a table view"""
     
+    selectionChanged = pyqtSignal()
+    
     def __init__(self, data=None):
         super().__init__()
         self._data = data if data is not None else pd.DataFrame()
@@ -69,43 +71,103 @@ class TestDataModel(QAbstractTableModel):
             if col not in self._data.columns:
                 self._data[col] = None
         
+        # Add selection column (not displayed in the columns list)
+        self._data['selected'] = True
+        
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
     
     def columnCount(self, parent=QModelIndex()):
-        return len(self._display_columns)
+        # Add 1 for the checkbox column
+        return len(self._display_columns) + 1
     
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+        if not index.isValid():
             return None
         
-        column_name = self._display_columns[index.column()]
+        # Handle checkbox column (first column)
+        if index.column() == 0:
+            if role == Qt.ItemDataRole.CheckStateRole:
+                # Return the checkbox state
+                try:
+                    return Qt.CheckState.Checked if self._data.iloc[index.row()]['selected'] else Qt.CheckState.Unchecked
+                except (KeyError, IndexError):
+                    return Qt.CheckState.Checked
+            return None
         
-        try:
-            value = self._data.iloc[index.row()][column_name]
-            
-            # Format numeric values
-            if isinstance(value, (int, float)):
-                if column_name in ["group_es_mm", "group_es_moa", "mean_radius_mm", "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm"]:
-                    return f"{value:.2f}"
-                elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
-                    return f"{value:.1f}"
-                else:
-                    return str(value)
-            
-            return str(value)
-        except (KeyError, ValueError) as e:
-            # If the column doesn't exist or there's an error, return an empty string
-            return ""
+        # For other columns, adjust the column index
+        actual_column = index.column() - 1
+        if actual_column < 0 or actual_column >= len(self._display_columns):
+            return None
+        
+        column_name = self._display_columns[actual_column]
+        
+        # Handle display role for data columns
+        if role == Qt.ItemDataRole.DisplayRole:
+            try:
+                value = self._data.iloc[index.row()][column_name]
+                
+                # Format numeric values
+                if isinstance(value, (int, float)):
+                    if column_name in ["group_es_mm", "group_es_moa", "mean_radius_mm", "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm"]:
+                        return f"{value:.2f}"
+                    elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
+                        return f"{value:.1f}"
+                    else:
+                        return str(value)
+                
+                return str(value)
+            except (KeyError, ValueError, IndexError) as e:
+                # If the column doesn't exist or there's an error, return an empty string
+                return ""
+        
+        return None
     
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            # Return user-friendly column names
-            column_name = self._display_columns[section]
+            if section == 0:
+                return "Select"
+            
+            # Return user-friendly column names for data columns
+            column_name = self._display_columns[section - 1]
             # Convert snake_case to Title Case with spaces
             return " ".join(word.capitalize() for word in column_name.split("_"))
         
         return super().headerData(section, orientation, role)
+    
+    def flags(self, index):
+        """Return the item flags for the given index"""
+        if not index.isValid():
+            return Qt.ItemFlag.NoItemFlags
+        
+        # Make the checkbox column editable
+        if index.column() == 0:
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsUserCheckable
+        
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+    
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+        """Set the data for the given index"""
+        if not index.isValid():
+            return False
+        
+        # Handle checkbox state changes
+        if index.column() == 0 and role == Qt.ItemDataRole.CheckStateRole:
+            row = index.row()
+            
+            # Update the selected state in the dataframe
+            try:
+                self._data.iloc[row, self._data.columns.get_loc('selected')] = (value == Qt.CheckState.Checked)
+                
+                # Emit the selectionChanged signal
+                self.selectionChanged.emit()
+                
+                return True
+            except (KeyError, IndexError) as e:
+                print(f"Error setting selection state: {e}")
+                return False
+        
+        return False
     
     def update_data(self, data):
         """Update the model with new data"""
@@ -370,10 +432,38 @@ class DataAnalysisWidget(QWidget):
         
         table_layout.addLayout(table_header)
         
+        # Selection controls
+        selection_controls = QHBoxLayout()
+        
+        # Select All button
+        select_all_button = QPushButton("Select All")
+        select_all_button.clicked.connect(self.select_all_tests)
+        selection_controls.addWidget(select_all_button)
+        
+        # Deselect All button
+        deselect_all_button = QPushButton("Deselect All")
+        deselect_all_button.clicked.connect(self.deselect_all_tests)
+        selection_controls.addWidget(deselect_all_button)
+        
+        # Toggle Selection button
+        toggle_selection_button = QPushButton("Toggle Selection")
+        toggle_selection_button.clicked.connect(self.toggle_test_selection)
+        selection_controls.addWidget(toggle_selection_button)
+        
+        # Selected count label
+        self.selected_count_label = QLabel("0 tests selected")
+        selection_controls.addStretch()
+        selection_controls.addWidget(self.selected_count_label)
+        
+        table_layout.addLayout(selection_controls)
+        
         # Test table
         self.test_table = QTableView()
         self.test_model = TestDataModel()
         self.test_table.setModel(self.test_model)
+        
+        # Connect the selectionChanged signal to update plots
+        self.test_model.selectionChanged.connect(self.update_plots)
         
         # Enable sorting
         self.test_table.setSortingEnabled(True)
@@ -504,6 +594,10 @@ class DataAnalysisWidget(QWidget):
             })
         
         self.filtered_data = self.all_data.copy()
+        
+        # Add selection column if it doesn't exist
+        if 'selected' not in self.filtered_data.columns:
+            self.filtered_data['selected'] = True
         
         # Update the table model
         self.test_model.update_data(self.filtered_data)
@@ -935,15 +1029,71 @@ class DataAnalysisWidget(QWidget):
         # Apply filters (which will now show all data)
         self.apply_filters()
     
+    def select_all_tests(self):
+        """Select all tests in the filtered data"""
+        # Set all tests to selected
+        self.filtered_data['selected'] = True
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update the selected count label
+        self.update_selected_count()
+        
+        # Update plots
+        self.update_plots()
+    
+    def deselect_all_tests(self):
+        """Deselect all tests in the filtered data"""
+        # Set all tests to not selected
+        self.filtered_data['selected'] = False
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update the selected count label
+        self.update_selected_count()
+        
+        # Update plots
+        self.update_plots()
+    
+    def toggle_test_selection(self):
+        """Toggle the selection state of all tests in the filtered data"""
+        # Toggle the selection state of all tests
+        self.filtered_data['selected'] = ~self.filtered_data['selected']
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update the selected count label
+        self.update_selected_count()
+        
+        # Update plots
+        self.update_plots()
+    
+    def update_selected_count(self):
+        """Update the selected count label"""
+        # Count the number of selected tests
+        selected_count = len(self.filtered_data[self.filtered_data['selected'] == True])
+        
+        # Update the selected count label
+        self.selected_count_label.setText(f"{selected_count} tests selected")
+    
     def update_plots(self):
         """Update all plots with the current filtered data"""
-        if len(self.filtered_data) < 2:
+        # Get only selected tests
+        selected_df = self.filtered_data[self.filtered_data['selected'] == True]
+        
+        # Update the selected count label
+        self.update_selected_count()
+        
+        if len(selected_df) < 2:
             # Not enough data for meaningful plots
             self.clear_plots()
             return
         
         # Sort data by powder charge for plotting
-        plot_df = self.filtered_data.sort_values("powder_charge_gr")
+        plot_df = selected_df.sort_values("powder_charge_gr")
         
         # Update accuracy plot
         self.update_accuracy_plot(plot_df)
