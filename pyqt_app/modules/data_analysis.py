@@ -237,6 +237,9 @@ class DataAnalysisWidget(QWidget):
         # Filter groups in horizontal layout
         filter_groups = QHBoxLayout()
         
+        # Left column for Test Info and Platform
+        left_column = QVBoxLayout()
+        
         # Test Info filters
         test_info_group = QGroupBox("Test Info")
         test_info_layout = QFormLayout(test_info_group)
@@ -263,7 +266,7 @@ class DataAnalysisWidget(QWidget):
         self.distance_combo.addItems(["All", "100m", "200m", "300m"])
         test_info_layout.addRow("Distance:", self.distance_combo)
         
-        filter_groups.addWidget(test_info_group)
+        left_column.addWidget(test_info_group)
         
         # Platform filters
         platform_group = QGroupBox("Platform")
@@ -279,7 +282,9 @@ class DataAnalysisWidget(QWidget):
         self.rifle_combo.addItem("All")
         platform_layout.addRow("Rifle:", self.rifle_combo)
         
-        filter_groups.addWidget(platform_group)
+        left_column.addWidget(platform_group)
+        
+        filter_groups.addLayout(left_column)
         
         # Ammunition filters
         ammo_group = QGroupBox("Ammunition")
@@ -306,9 +311,13 @@ class DataAnalysisWidget(QWidget):
         
         filter_groups.addWidget(ammo_group)
         
-        # Results Target filters
-        results_target_group = QGroupBox("Results Target")
-        results_target_layout = QFormLayout(results_target_group)
+        # Results Target filters - split into two columns
+        results_target_container = QWidget()
+        results_target_container_layout = QHBoxLayout(results_target_container)
+        
+        # Left column of Results Target
+        results_target_left = QGroupBox("Results Target (1/2)")
+        results_target_left_layout = QFormLayout(results_target_left)
         
         # Number of shots filter
         self.shots_min = QLineEdit()
@@ -317,7 +326,7 @@ class DataAnalysisWidget(QWidget):
         shots_layout.addWidget(self.shots_min)
         shots_layout.addWidget(QLabel("to"))
         shots_layout.addWidget(self.shots_max)
-        results_target_layout.addRow("Number of shots:", shots_layout)
+        results_target_left_layout.addRow("Number of shots:", shots_layout)
         
         # Group size range filter (renamed to Group ES)
         self.group_es_min = QLineEdit()
@@ -326,7 +335,7 @@ class DataAnalysisWidget(QWidget):
         group_es_layout.addWidget(self.group_es_min)
         group_es_layout.addWidget(QLabel("to"))
         group_es_layout.addWidget(self.group_es_max)
-        results_target_layout.addRow("Group ES (mm):", group_es_layout)
+        results_target_left_layout.addRow("Group ES (mm):", group_es_layout)
         
         # Group ES MOA filter
         self.group_es_moa_min = QLineEdit()
@@ -335,7 +344,7 @@ class DataAnalysisWidget(QWidget):
         group_es_moa_layout.addWidget(self.group_es_moa_min)
         group_es_moa_layout.addWidget(QLabel("to"))
         group_es_moa_layout.addWidget(self.group_es_moa_max)
-        results_target_layout.addRow("Group ES (MOA):", group_es_moa_layout)
+        results_target_left_layout.addRow("Group ES (MOA):", group_es_moa_layout)
         
         # Mean Radius filter
         self.mean_radius_min = QLineEdit()
@@ -344,7 +353,13 @@ class DataAnalysisWidget(QWidget):
         mean_radius_layout.addWidget(self.mean_radius_min)
         mean_radius_layout.addWidget(QLabel("to"))
         mean_radius_layout.addWidget(self.mean_radius_max)
-        results_target_layout.addRow("Mean Radius (mm):", mean_radius_layout)
+        results_target_left_layout.addRow("Mean Radius (mm):", mean_radius_layout)
+        
+        results_target_container_layout.addWidget(results_target_left)
+        
+        # Right column of Results Target
+        results_target_right = QGroupBox("Results Target (2/2)")
+        results_target_right_layout = QFormLayout(results_target_right)
         
         # Group ES Width-X filter
         self.group_es_x_min = QLineEdit()
@@ -353,7 +368,7 @@ class DataAnalysisWidget(QWidget):
         group_es_x_layout.addWidget(self.group_es_x_min)
         group_es_x_layout.addWidget(QLabel("to"))
         group_es_x_layout.addWidget(self.group_es_x_max)
-        results_target_layout.addRow("Group ES Width-X (mm):", group_es_x_layout)
+        results_target_right_layout.addRow("Group ES Width-X (mm):", group_es_x_layout)
         
         # Group ES Height-Y filter
         self.group_es_y_min = QLineEdit()
@@ -362,7 +377,7 @@ class DataAnalysisWidget(QWidget):
         group_es_y_layout.addWidget(self.group_es_y_min)
         group_es_y_layout.addWidget(QLabel("to"))
         group_es_y_layout.addWidget(self.group_es_y_max)
-        results_target_layout.addRow("Group ES Height-Y (mm):", group_es_y_layout)
+        results_target_right_layout.addRow("Group ES Height-Y (mm):", group_es_y_layout)
         
         # POA Horizontal-X filter
         self.poi_x_min = QLineEdit()
@@ -371,7 +386,7 @@ class DataAnalysisWidget(QWidget):
         poi_x_layout.addWidget(self.poi_x_min)
         poi_x_layout.addWidget(QLabel("to"))
         poi_x_layout.addWidget(self.poi_x_max)
-        results_target_layout.addRow("POA Horizontal-X (mm):", poi_x_layout)
+        results_target_right_layout.addRow("POA Horizontal-X (mm):", poi_x_layout)
         
         # POA Vertical-Y filter
         self.poi_y_min = QLineEdit()
@@ -380,9 +395,11 @@ class DataAnalysisWidget(QWidget):
         poi_y_layout.addWidget(self.poi_y_min)
         poi_y_layout.addWidget(QLabel("to"))
         poi_y_layout.addWidget(self.poi_y_max)
-        results_target_layout.addRow("POA Vertical-Y (mm):", poi_y_layout)
+        results_target_right_layout.addRow("POA Vertical-Y (mm):", poi_y_layout)
         
-        filter_groups.addWidget(results_target_group)
+        results_target_container_layout.addWidget(results_target_right)
+        
+        filter_groups.addWidget(results_target_container)
         
         # Results Velocity filters
         results_velocity_group = QGroupBox("Results Velocity")
@@ -1181,7 +1198,7 @@ class DataAnalysisWidget(QWidget):
         
         # Set x-axis labels
         self.accuracy_canvas.axes.set_xticks(x)
-        self.accuracy_canvas.axes.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        self.accuracy_canvas.axes.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
         # Add a title
         self.accuracy_canvas.axes.set_title('Group Size and Mean Radius vs. Powder Charge')
@@ -1223,7 +1240,7 @@ class DataAnalysisWidget(QWidget):
         
         # Set x-axis labels
         self.velocity_canvas.axes.set_xticks(x)
-        self.velocity_canvas.axes.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        self.velocity_canvas.axes.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
         # Add a title
         self.velocity_canvas.axes.set_title('Velocity Metrics vs. Powder Charge')
@@ -1267,7 +1284,7 @@ class DataAnalysisWidget(QWidget):
         
         # Set x-axis labels
         ax1.set_xticks(x)
-        ax1.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        ax1.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
         # Create a second y-axis for Mean Radius
         ax2 = ax1.twinx()
