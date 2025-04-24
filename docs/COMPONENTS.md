@@ -55,6 +55,12 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 - Provides filtering options for test data with calendar widgets for date selection
 - Generates charts and visualizations for accuracy and velocity metrics
 - Allows filtering by various parameters including group size, velocity, and shot count
+- Enables selective inclusion/exclusion of specific tests from analysis via checkboxes
+- Provides bulk selection controls (Select All, Deselect All, Toggle Selection)
+- Preserves selection state when applying filters
+- Displays only selected tests in visualizations
+- Features a reorganized filter layout with logical grouping of related filters
+- Includes a scrollable visualization area for larger graph displays
 - Handles missing data gracefully with comprehensive error handling
 - Validates column existence before filtering
 - Handles NaN values in filter operations
@@ -62,8 +68,11 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 
 ### Key Classes
 
-- `TestDataModel`: Custom table model for displaying test data
-- `MatplotlibCanvas`: Custom canvas for embedding Matplotlib plots in PyQt
+- `TestDataModel`: Custom table model for displaying test data with selection capabilities
+  - Adds a checkbox column for selecting/unselecting tests
+  - Emits signals when selection state changes
+  - Preserves selection state during filtering operations
+- `MatplotlibCanvas`: Custom canvas for embedding Matplotlib plots in PyQt with enhanced size
 
 ### Key Methods
 
@@ -71,8 +80,13 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 - `setup_ui()`: Sets up the UI components with filter groups and visualization tabs
 - `load_data()`: Loads all tests from the active database
 - `apply_filters()`: Filters tests based on user criteria with robust error handling
-- `update_plots()`: Updates the accuracy, velocity, and combined plots
+- `update_plots()`: Updates the accuracy, velocity, and combined plots based on selected tests
 - `refresh()`: Refreshes the test data
+- `select_all_tests()`: Selects all tests in the filtered data
+- `deselect_all_tests()`: Deselects all tests in the filtered data
+- `toggle_test_selection()`: Toggles the selection state of all tests
+- `update_selected_count()`: Updates the selected count label
+- `clear_plots()`: Clears all plots when not enough data is available
 
 ## Create Test Module
 

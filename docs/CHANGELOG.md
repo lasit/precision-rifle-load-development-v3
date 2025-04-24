@@ -18,6 +18,9 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Zoomable and pannable target images
 - Calendar widget for date filtering in the Data Analysis tab
 - Additional columns in the Data Analysis tab (Group ES Width-X, Group ES Height-Y, POA Horizontal-X, POA Vertical-Y, Number of shots)
+- Test selection feature in Data Analysis module allowing users to include/exclude specific tests from analysis
+- Improved filter layout with reorganized sections for better usability
+- Scrollable visualization area for larger graph displays
 
 ### Changed
 - Improved settings management with platform-specific storage locations
@@ -26,12 +29,18 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Refactored code for better maintainability
 - Fixed menu bar visibility on macOS
 - Improved platform-specific startup and shutdown scripts
+- Increased main window size for better usability
+- Enhanced graph size and visualization for better data analysis
+- Reorganized filter layout in Data Analysis module for improved workflow
 
 ### Fixed
 - Issue with test list not refreshing after settings changes
 - Path handling on different operating systems
 - Improved error handling in Data Analysis module filters
 - Fixed NoneType errors in filter application
+- Fixed selection state preservation when applying filters
+- Improved checkbox behavior in the test table
+- Fixed graph rendering issues to prevent duplicate lines
 
 ## [1.2.0] - 2025-03-15
 
