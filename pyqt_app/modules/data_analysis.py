@@ -678,60 +678,110 @@ class DataAnalysisWidget(QWidget):
             try:
                 min_mean_radius = float(self.mean_radius_min.text())
                 max_mean_radius = float(self.mean_radius_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["mean_radius_mm"] >= min_mean_radius) & 
-                    (filtered_df["mean_radius_mm"] <= max_mean_radius)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "mean_radius_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["mean_radius_mm"].notna()
+                    mask = mask & (filtered_df["mean_radius_mm"] >= min_mean_radius)
+                    mask = mask & (filtered_df["mean_radius_mm"] <= max_mean_radius)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'mean_radius_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Mean Radius filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Mean Radius filter: {e}")
         
         # Group ES Width-X filter
         if self.group_es_x_min.text() and self.group_es_x_max.text():
             try:
                 min_group_es_x = float(self.group_es_x_min.text())
                 max_group_es_x = float(self.group_es_x_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["group_es_x_mm"] >= min_group_es_x) & 
-                    (filtered_df["group_es_x_mm"] <= max_group_es_x)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "group_es_x_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_x_mm"].notna()
+                    mask = mask & (filtered_df["group_es_x_mm"] >= min_group_es_x)
+                    mask = mask & (filtered_df["group_es_x_mm"] <= max_group_es_x)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_x_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES Width-X filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES Width-X filter: {e}")
         
         # Group ES Height-Y filter
         if self.group_es_y_min.text() and self.group_es_y_max.text():
             try:
                 min_group_es_y = float(self.group_es_y_min.text())
                 max_group_es_y = float(self.group_es_y_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["group_es_y_mm"] >= min_group_es_y) & 
-                    (filtered_df["group_es_y_mm"] <= max_group_es_y)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "group_es_y_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_y_mm"].notna()
+                    mask = mask & (filtered_df["group_es_y_mm"] >= min_group_es_y)
+                    mask = mask & (filtered_df["group_es_y_mm"] <= max_group_es_y)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_y_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES Height-Y filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES Height-Y filter: {e}")
         
         # POA Horizontal-X filter
         if self.poi_x_min.text() and self.poi_x_max.text():
             try:
                 min_poi_x = float(self.poi_x_min.text())
                 max_poi_x = float(self.poi_x_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["poi_x_mm"] >= min_poi_x) & 
-                    (filtered_df["poi_x_mm"] <= max_poi_x)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "poi_x_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["poi_x_mm"].notna()
+                    mask = mask & (filtered_df["poi_x_mm"] >= min_poi_x)
+                    mask = mask & (filtered_df["poi_x_mm"] <= max_poi_x)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'poi_x_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting POA Horizontal-X filter values: {e}")
+            except Exception as e:
+                print(f"Error applying POA Horizontal-X filter: {e}")
         
         # POA Vertical-Y filter
         if self.poi_y_min.text() and self.poi_y_max.text():
             try:
                 min_poi_y = float(self.poi_y_min.text())
                 max_poi_y = float(self.poi_y_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["poi_y_mm"] >= min_poi_y) & 
-                    (filtered_df["poi_y_mm"] <= max_poi_y)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "poi_y_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["poi_y_mm"].notna()
+                    mask = mask & (filtered_df["poi_y_mm"] >= min_poi_y)
+                    mask = mask & (filtered_df["poi_y_mm"] <= max_poi_y)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'poi_y_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting POA Vertical-Y filter values: {e}")
+            except Exception as e:
+                print(f"Error applying POA Vertical-Y filter: {e}")
         
         # Apply Results Velocity filters
         
@@ -740,36 +790,66 @@ class DataAnalysisWidget(QWidget):
             try:
                 min_avg_velocity = float(self.avg_velocity_min.text())
                 max_avg_velocity = float(self.avg_velocity_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["avg_velocity_fps"] >= min_avg_velocity) & 
-                    (filtered_df["avg_velocity_fps"] <= max_avg_velocity)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "avg_velocity_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["avg_velocity_fps"].notna()
+                    mask = mask & (filtered_df["avg_velocity_fps"] >= min_avg_velocity)
+                    mask = mask & (filtered_df["avg_velocity_fps"] <= max_avg_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'avg_velocity_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Avg Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Avg Velocity filter: {e}")
         
         # SD Velocity filter
         if self.sd_velocity_min.text() and self.sd_velocity_max.text():
             try:
                 min_sd_velocity = float(self.sd_velocity_min.text())
                 max_sd_velocity = float(self.sd_velocity_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["sd_fps"] >= min_sd_velocity) & 
-                    (filtered_df["sd_fps"] <= max_sd_velocity)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "sd_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["sd_fps"].notna()
+                    mask = mask & (filtered_df["sd_fps"] >= min_sd_velocity)
+                    mask = mask & (filtered_df["sd_fps"] <= max_sd_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'sd_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting SD Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying SD Velocity filter: {e}")
         
         # ES Velocity filter
         if self.es_velocity_min.text() and self.es_velocity_max.text():
             try:
                 min_es_velocity = float(self.es_velocity_min.text())
                 max_es_velocity = float(self.es_velocity_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["es_fps"] >= min_es_velocity) & 
-                    (filtered_df["es_fps"] <= max_es_velocity)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "es_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["es_fps"].notna()
+                    mask = mask & (filtered_df["es_fps"] >= min_es_velocity)
+                    mask = mask & (filtered_df["es_fps"] <= max_es_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'es_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting ES Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying ES Velocity filter: {e}")
                 
         # For backward compatibility
         if self.group_min is not None and self.group_max is not None and self.group_min.text() and self.group_max.text():
@@ -876,8 +956,9 @@ class DataAnalysisWidget(QWidget):
     
     def update_accuracy_plot(self, df):
         """Update the accuracy plot with the given data"""
-        # Clear the plot
-        self.accuracy_canvas.axes.clear()
+        # Clear the figure and create a new axes
+        self.accuracy_canvas.fig.clear()
+        self.accuracy_canvas.axes = self.accuracy_canvas.fig.add_subplot(111)
         
         # Create the plot
         x = range(len(df))
@@ -916,8 +997,9 @@ class DataAnalysisWidget(QWidget):
     
     def update_velocity_plot(self, df):
         """Update the velocity plot with the given data"""
-        # Clear the plot
-        self.velocity_canvas.axes.clear()
+        # Clear the figure and create a new axes
+        self.velocity_canvas.fig.clear()
+        self.velocity_canvas.axes = self.velocity_canvas.fig.add_subplot(111)
         
         # Create the plot
         x = range(len(df))
@@ -957,8 +1039,9 @@ class DataAnalysisWidget(QWidget):
     
     def update_combined_plot(self, df):
         """Update the combined plot with the given data"""
-        # Clear the plot
-        self.combined_canvas.axes.clear()
+        # Clear the figure and create a new axes
+        self.combined_canvas.fig.clear()
+        self.combined_canvas.axes = self.combined_canvas.fig.add_subplot(111)
         
         # Create the plot
         x = range(len(df))
@@ -1027,16 +1110,19 @@ class DataAnalysisWidget(QWidget):
     def clear_plots(self):
         """Clear all plots"""
         # Clear accuracy plot
-        self.accuracy_canvas.axes.clear()
+        self.accuracy_canvas.fig.clear()
+        self.accuracy_canvas.axes = self.accuracy_canvas.fig.add_subplot(111)
         self.accuracy_canvas.axes.set_title('Not enough data for visualization')
         self.accuracy_canvas.draw()
         
         # Clear velocity plot
-        self.velocity_canvas.axes.clear()
+        self.velocity_canvas.fig.clear()
+        self.velocity_canvas.axes = self.velocity_canvas.fig.add_subplot(111)
         self.velocity_canvas.axes.set_title('Not enough data for visualization')
         self.velocity_canvas.draw()
         
         # Clear combined plot
-        self.combined_canvas.axes.clear()
+        self.combined_canvas.fig.clear()
+        self.combined_canvas.axes = self.combined_canvas.fig.add_subplot(111)
         self.combined_canvas.axes.set_title('Not enough data for visualization')
         self.combined_canvas.draw()
