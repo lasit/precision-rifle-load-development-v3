@@ -136,7 +136,7 @@ def load_group_data(test_path):
         test_path (str): Path to the test directory
         
     Returns:
-        dict: Dictionary containing group data and chrono data
+        dict: Dictionary containing group data, chrono data, and environment data
     """
     group_file = os.path.join(test_path, 'group.yaml')
     
@@ -152,7 +152,13 @@ def load_group_data(test_path):
             'shots': 0,
             'avg_velocity_fps': 0,
             'sd_fps': 0,
-            'es_fps': 0
+            'es_fps': 0,
+            'temperature_c': 0,
+            'humidity_pct': 0,
+            'pressure_hpa': 0,
+            'wind_speed_ms': 0,
+            'wind_direction': '',
+            'light_conditions': ''
         }
     
     try:
@@ -171,7 +177,13 @@ def load_group_data(test_path):
                 'shots': 0,
                 'avg_velocity_fps': 0,
                 'sd_fps': 0,
-                'es_fps': 0
+                'es_fps': 0,
+                'temperature_c': 0,
+                'humidity_pct': 0,
+                'pressure_hpa': 0,
+                'wind_speed_ms': 0,
+                'wind_direction': '',
+                'light_conditions': ''
             }
         
         # Extract relevant group data from the nested structure
@@ -179,6 +191,9 @@ def load_group_data(test_path):
         
         # Extract chrono data if available
         chrono_data = yaml_data.get('chrono', {})
+        
+        # Extract environment data if available
+        environment_data = yaml_data.get('environment', {})
         
         return {
             'group_es_mm': group_data.get('group_es_mm', 0),
@@ -191,7 +206,13 @@ def load_group_data(test_path):
             'shots': group_data.get('shots', 0),
             'avg_velocity_fps': chrono_data.get('avg_velocity_fps', 0),
             'sd_fps': chrono_data.get('sd_fps', 0),
-            'es_fps': chrono_data.get('es_fps', 0)
+            'es_fps': chrono_data.get('es_fps', 0),
+            'temperature_c': environment_data.get('temperature_c', 0),
+            'humidity_pct': environment_data.get('humidity_percent', 0),
+            'pressure_hpa': environment_data.get('pressure_hpa', 0),
+            'wind_speed_ms': environment_data.get('wind_speed_mps', 0),
+            'wind_direction': environment_data.get('wind_dir_deg', ''),
+            'light_conditions': environment_data.get('weather', '')
         }
     except Exception as e:
         return {
@@ -205,7 +226,13 @@ def load_group_data(test_path):
             'shots': 0,
             'avg_velocity_fps': 0,
             'sd_fps': 0,
-            'es_fps': 0
+            'es_fps': 0,
+            'temperature_c': 0,
+            'humidity_pct': 0,
+            'pressure_hpa': 0,
+            'wind_speed_ms': 0,
+            'wind_direction': '',
+            'light_conditions': ''
         }
 
 

@@ -21,6 +21,11 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Test selection feature in Data Analysis module allowing users to include/exclude specific tests from analysis
 - Improved filter layout with reorganized sections for better usability
 - Scrollable visualization area for larger graph displays
+- Dynamic custom plot feature allowing users to select any parameter for X and Y axes
+- Support for up to three Y-axis parameters with distinct colors in custom plots
+- Trend line generation with equations for each parameter in custom plots
+- Environment data display in the test table (temperature, humidity, pressure, wind)
+- Support for COAL, B2O, and bullet weight parameters in custom plots and filters
 
 ### Changed
 - Improved settings management with platform-specific storage locations

@@ -58,12 +58,12 @@ components:
   
 # Environmental Conditions
 environment:
-  temperature: 22.5 # Celsius
-  humidity: 45 # Percentage
-  pressure: 1013.2 # hPa
-  wind_speed: 2.5 # m/s
-  wind_direction: "3 o'clock" # Clock position
-  light_conditions: "Sunny" # Optional
+  temperature_c: 22.5 # Celsius
+  humidity_percent: 45 # Percentage
+  pressure_hpa: 1013.2 # hPa
+  wind_speed_mps: 2.5 # m/s
+  wind_dir_deg: 45 # Degrees (0-360)
+  weather: "Sunny" # Optional
   
 # Target Results
 results_target:

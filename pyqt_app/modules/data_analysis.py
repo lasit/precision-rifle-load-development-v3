@@ -58,12 +58,28 @@ class TestDataModel(QAbstractTableModel):
         super().__init__()
         self._data = data if data is not None else pd.DataFrame()
         self._display_columns = [
-            "test_id", "date", "distance_m", "calibre", "rifle", 
+            # Test identification
+            "test_id", "date", "distance_m", 
+            
+            # Platform
+            "calibre", "rifle", 
+            
+            # Components
             "bullet_brand", "bullet_model", "bullet_weight_gr", 
             "powder_brand", "powder_model", "powder_charge_gr",
+            "coal_in", "b2o_in", "primer",
+            
+            # Results
             "group_es_mm", "group_es_moa", "mean_radius_mm",
             "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm",
-            "avg_velocity_fps", "sd_fps", "es_fps", "shots"
+            "avg_velocity_fps", "sd_fps", "es_fps", 
+            
+            # Environment
+            "temperature_c", "humidity_pct", "pressure_hpa", 
+            "wind_speed_ms", "wind_direction", "light_conditions",
+            
+            # Shots count
+            "shots"
         ]
         
         # Ensure all columns exist in the dataframe
@@ -201,6 +217,28 @@ class DataAnalysisWidget(QWidget):
         self.velocity_min = None
         self.velocity_max = None
         
+        # Define plottable parameters
+        self.plottable_params = {
+            # Load data parameters
+            "powder_charge_gr": "Powder Charge (gr)",
+            "coal_in": "COAL (in)",
+            "b2o_in": "B2O (in)",
+            "bullet_weight_gr": "Bullet Weight (gr)",
+            
+            # Results parameters
+            "group_es_mm": "Group ES (mm)",
+            "group_es_moa": "Group ES (MOA)",
+            "mean_radius_mm": "Mean Radius (mm)",
+            "group_es_x_mm": "Group ES Width-X (mm)",
+            "group_es_y_mm": "Group ES Height-Y (mm)",
+            "poi_x_mm": "POA Horizontal-X (mm)",
+            "poi_y_mm": "POA Vertical-Y (mm)",
+            "avg_velocity_fps": "Avg Velocity (fps)",
+            "sd_fps": "SD Velocity (fps)",
+            "es_fps": "ES Velocity (fps)",
+            "shots": "Number of Shots"
+        }
+        
         # Set up the UI
         self.setup_ui()
         
@@ -295,6 +333,15 @@ class DataAnalysisWidget(QWidget):
         self.bullet_brand_combo.addItem("All")
         ammo_layout.addRow("Bullet Brand:", self.bullet_brand_combo)
         
+        # Bullet weight filter
+        self.bullet_weight_min = QLineEdit()
+        self.bullet_weight_max = QLineEdit()
+        bullet_weight_layout = QHBoxLayout()
+        bullet_weight_layout.addWidget(self.bullet_weight_min)
+        bullet_weight_layout.addWidget(QLabel("to"))
+        bullet_weight_layout.addWidget(self.bullet_weight_max)
+        ammo_layout.addRow("Bullet Weight (gr):", bullet_weight_layout)
+        
         # Powder brand filter
         self.powder_brand_combo = QComboBox()
         self.powder_brand_combo.addItem("All")
@@ -308,6 +355,24 @@ class DataAnalysisWidget(QWidget):
         charge_layout.addWidget(QLabel("to"))
         charge_layout.addWidget(self.charge_max)
         ammo_layout.addRow("Charge (gr):", charge_layout)
+        
+        # COAL filter
+        self.coal_min = QLineEdit()
+        self.coal_max = QLineEdit()
+        coal_layout = QHBoxLayout()
+        coal_layout.addWidget(self.coal_min)
+        coal_layout.addWidget(QLabel("to"))
+        coal_layout.addWidget(self.coal_max)
+        ammo_layout.addRow("COAL (in):", coal_layout)
+        
+        # B2O filter
+        self.b2o_min = QLineEdit()
+        self.b2o_max = QLineEdit()
+        b2o_layout = QHBoxLayout()
+        b2o_layout.addWidget(self.b2o_min)
+        b2o_layout.addWidget(QLabel("to"))
+        b2o_layout.addWidget(self.b2o_max)
+        ammo_layout.addRow("B2O (in):", b2o_layout)
         
         filter_groups.addWidget(ammo_group)
         
@@ -558,6 +623,56 @@ class DataAnalysisWidget(QWidget):
         
         viz_tabs.addTab(combined_tab, "Combined")
         
+        # Custom Plot tab
+        custom_tab = QWidget()
+        custom_layout = QVBoxLayout(custom_tab)
+        
+        # Controls for custom plot
+        controls_layout = QHBoxLayout()
+        
+        # X-axis parameter selection
+        x_axis_layout = QFormLayout()
+        self.x_axis_combo = QComboBox()
+        x_axis_layout.addRow("X-Axis:", self.x_axis_combo)
+        controls_layout.addLayout(x_axis_layout)
+        
+        # Y-axis parameter selections (up to 3)
+        y_axis_layout = QVBoxLayout()
+        y_axis_form = QFormLayout()
+        
+        # Y-axis 1 (primary)
+        self.y_axis1_combo = QComboBox()
+        y_axis_form.addRow("Y-Axis 1:", self.y_axis1_combo)
+        
+        # Y-axis 2 (secondary)
+        self.y_axis2_combo = QComboBox()
+        self.y_axis2_combo.addItem("None")
+        y_axis_form.addRow("Y-Axis 2:", self.y_axis2_combo)
+        
+        # Y-axis 3 (tertiary)
+        self.y_axis3_combo = QComboBox()
+        self.y_axis3_combo.addItem("None")
+        y_axis_form.addRow("Y-Axis 3:", self.y_axis3_combo)
+        
+        y_axis_layout.addLayout(y_axis_form)
+        controls_layout.addLayout(y_axis_layout)
+        
+        # Generate plot button
+        generate_button = QPushButton("Generate Plot")
+        generate_button.clicked.connect(self.generate_custom_plot)
+        controls_layout.addWidget(generate_button)
+        
+        custom_layout.addLayout(controls_layout)
+        
+        # Custom plot canvas
+        self.custom_canvas = MatplotlibCanvas(self, width=5, height=4, dpi=100)
+        custom_toolbar = NavigationToolbar(self.custom_canvas, self)
+        
+        custom_layout.addWidget(custom_toolbar)
+        custom_layout.addWidget(self.custom_canvas)
+        
+        viz_tabs.addTab(custom_tab, "Custom Plot")
+        
         viz_layout.addWidget(viz_tabs)
         
         # Set the visualization widget as the content of the scroll area
@@ -645,8 +760,262 @@ class DataAnalysisWidget(QWidget):
         # Populate filter dropdowns
         self.populate_filters()
         
+        # Populate custom plot parameter dropdowns
+        self.populate_plot_params()
+        
         # Create initial plots
         self.update_plots()
+        
+    def populate_plot_params(self):
+        """Populate the custom plot parameter dropdowns"""
+        # Clear the dropdowns
+        self.x_axis_combo.clear()
+        self.y_axis1_combo.clear()
+        self.y_axis2_combo.clear()
+        self.y_axis3_combo.clear()
+        
+        # Add "None" option to secondary and tertiary Y-axis dropdowns
+        self.y_axis2_combo.addItem("None")
+        self.y_axis3_combo.addItem("None")
+        
+        # Add all plottable parameters to the dropdowns
+        for param_key, param_name in self.plottable_params.items():
+            self.x_axis_combo.addItem(param_name, param_key)
+            self.y_axis1_combo.addItem(param_name, param_key)
+            self.y_axis2_combo.addItem(param_name, param_key)
+            self.y_axis3_combo.addItem(param_name, param_key)
+        
+        # Set default selections
+        self.x_axis_combo.setCurrentText(self.plottable_params["powder_charge_gr"])
+        self.y_axis1_combo.setCurrentText(self.plottable_params["group_es_moa"])
+        self.y_axis2_combo.setCurrentIndex(0)  # "None"
+        self.y_axis3_combo.setCurrentIndex(0)  # "None"
+    
+    def generate_custom_plot(self):
+        """Generate a custom plot based on selected parameters"""
+        # Get only selected tests
+        selected_df = self.filtered_data[self.filtered_data['selected'] == True]
+        
+        if len(selected_df) < 2:
+            # Not enough data for meaningful plots
+            self.custom_canvas.fig.clear()
+            self.custom_canvas.axes = self.custom_canvas.fig.add_subplot(111)
+            self.custom_canvas.axes.set_title('Not enough data for visualization (minimum 2 tests required)')
+            self.custom_canvas.draw()
+            return
+        
+        # Get the selected parameters
+        x_param = self.x_axis_combo.currentData()
+        y1_param = self.y_axis1_combo.currentData()
+        y2_param = self.y_axis2_combo.currentData() if self.y_axis2_combo.currentIndex() > 0 else None
+        y3_param = self.y_axis3_combo.currentData() if self.y_axis3_combo.currentIndex() > 0 else None
+        
+        # Check if the parameters exist in the dataframe
+        if x_param not in selected_df.columns:
+            print(f"Warning: '{x_param}' column not found in the data")
+            return
+        
+        if y1_param not in selected_df.columns:
+            print(f"Warning: '{y1_param}' column not found in the data")
+            return
+        
+        if y2_param and y2_param not in selected_df.columns:
+            print(f"Warning: '{y2_param}' column not found in the data")
+            y2_param = None
+            
+        if y3_param and y3_param not in selected_df.columns:
+            print(f"Warning: '{y3_param}' column not found in the data")
+            y3_param = None
+        
+        # Clear the figure and create a new axes
+        self.custom_canvas.fig.clear()
+        self.custom_canvas.axes = self.custom_canvas.fig.add_subplot(111)
+        
+        # Define colors for each Y-axis
+        colors = {
+            'y1': 'tab:blue',
+            'y2': 'tab:red',
+            'y3': 'tab:green'
+        }
+        
+        # Sort data by x parameter for line plots
+        plot_df = selected_df.sort_values(x_param)
+        
+        # Primary Y-axis (Y1)
+        ax1 = self.custom_canvas.axes
+        ax1.set_xlabel(self.plottable_params[x_param])
+        ax1.set_ylabel(self.plottable_params[y1_param], color=colors['y1'])
+        ax1.scatter(plot_df[x_param], plot_df[y1_param], color=colors['y1'], alpha=0.8, s=100)
+        ax1.plot(plot_df[x_param], plot_df[y1_param], '-', color=colors['y1'], alpha=0.6, label=self.plottable_params[y1_param])
+        ax1.tick_params(axis='y', labelcolor=colors['y1'])
+        
+        # Add a grid
+        ax1.grid(True, linestyle='--', alpha=0.7)
+        
+        # Add trend line for primary Y-axis
+        try:
+            # Convert to numeric if needed
+            x_data = pd.to_numeric(plot_df[x_param], errors='coerce')
+            y_data = pd.to_numeric(plot_df[y1_param], errors='coerce')
+            
+            # Remove NaN values
+            mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+            x_data = x_data[mask]
+            y_data = y_data[mask]
+            
+            if len(x_data) >= 2:
+                # Calculate trend line
+                z = np.polyfit(x_data, y_data, 1)
+                p = np.poly1d(z)
+                
+                # Add trend line to plot
+                x_range = np.linspace(min(x_data), max(x_data), 100)
+                ax1.plot(x_range, p(x_range), "--", color=colors['y1'], alpha=0.8)
+                
+                # Add trend line equation
+                slope, intercept = z
+                equation = f"y1 = {slope:.4f}x + {intercept:.4f}"
+                ax1.annotate(
+                    equation,
+                    xy=(0.05, 0.95),
+                    xycoords='axes fraction',
+                    fontsize=10,
+                    color=colors['y1'],
+                    backgroundcolor='w',
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8)
+                )
+        except Exception as e:
+            print(f"Error adding trend line for Y1: {e}")
+        
+        # Secondary Y-axis (Y2) if selected
+        if y2_param:
+            ax2 = ax1.twinx()
+            ax2.set_ylabel(self.plottable_params[y2_param], color=colors['y2'])
+            ax2.scatter(plot_df[x_param], plot_df[y2_param], color=colors['y2'], alpha=0.8, s=100)
+            ax2.plot(plot_df[x_param], plot_df[y2_param], '-', color=colors['y2'], alpha=0.6, label=self.plottable_params[y2_param])
+            ax2.tick_params(axis='y', labelcolor=colors['y2'])
+            
+            # Add trend line for secondary Y-axis
+            try:
+                # Convert to numeric if needed
+                x_data = pd.to_numeric(plot_df[x_param], errors='coerce')
+                y_data = pd.to_numeric(plot_df[y2_param], errors='coerce')
+                
+                # Remove NaN values
+                mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+                x_data = x_data[mask]
+                y_data = y_data[mask]
+                
+                if len(x_data) >= 2:
+                    # Calculate trend line
+                    z = np.polyfit(x_data, y_data, 1)
+                    p = np.poly1d(z)
+                    
+                    # Add trend line to plot
+                    x_range = np.linspace(min(x_data), max(x_data), 100)
+                    ax2.plot(x_range, p(x_range), "--", color=colors['y2'], alpha=0.8)
+                    
+                    # Add trend line equation
+                    slope, intercept = z
+                    equation = f"y2 = {slope:.4f}x + {intercept:.4f}"
+                    ax2.annotate(
+                        equation,
+                        xy=(0.05, 0.85),
+                        xycoords='axes fraction',
+                        fontsize=10,
+                        color=colors['y2'],
+                        backgroundcolor='w',
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8)
+                    )
+            except Exception as e:
+                print(f"Error adding trend line for Y2: {e}")
+        
+        # Tertiary Y-axis (Y3) if selected
+        if y3_param:
+            ax3 = ax1.twinx()
+            # Offset the third y-axis to the right
+            ax3.spines['right'].set_position(('outward', 60))
+            ax3.set_ylabel(self.plottable_params[y3_param], color=colors['y3'])
+            ax3.scatter(plot_df[x_param], plot_df[y3_param], color=colors['y3'], alpha=0.8, s=100)
+            ax3.plot(plot_df[x_param], plot_df[y3_param], '-', color=colors['y3'], alpha=0.6, label=self.plottable_params[y3_param])
+            ax3.tick_params(axis='y', labelcolor=colors['y3'])
+            
+            # Add trend line for tertiary Y-axis
+            try:
+                # Convert to numeric if needed
+                x_data = pd.to_numeric(plot_df[x_param], errors='coerce')
+                y_data = pd.to_numeric(plot_df[y3_param], errors='coerce')
+                
+                # Remove NaN values
+                mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+                x_data = x_data[mask]
+                y_data = y_data[mask]
+                
+                if len(x_data) >= 2:
+                    # Calculate trend line
+                    z = np.polyfit(x_data, y_data, 1)
+                    p = np.poly1d(z)
+                    
+                    # Add trend line to plot
+                    x_range = np.linspace(min(x_data), max(x_data), 100)
+                    ax3.plot(x_range, p(x_range), "--", color=colors['y3'], alpha=0.8)
+                    
+                    # Add trend line equation
+                    slope, intercept = z
+                    equation = f"y3 = {slope:.4f}x + {intercept:.4f}"
+                    ax3.annotate(
+                        equation,
+                        xy=(0.05, 0.75),
+                        xycoords='axes fraction',
+                        fontsize=10,
+                        color=colors['y3'],
+                        backgroundcolor='w',
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8)
+                    )
+            except Exception as e:
+                print(f"Error adding trend line for Y3: {e}")
+        
+        # Add a title
+        title_parts = []
+        if y1_param:
+            title_parts.append(self.plottable_params[y1_param])
+        if y2_param:
+            title_parts.append(self.plottable_params[y2_param])
+        if y3_param:
+            title_parts.append(self.plottable_params[y3_param])
+        
+        title = f"{', '.join(title_parts)} vs. {self.plottable_params[x_param]}"
+        self.custom_canvas.axes.set_title(title)
+        
+        # Add a legend
+        lines = []
+        labels = []
+        
+        # Get lines and labels from each axis
+        if y1_param:
+            line1, label1 = ax1.get_legend_handles_labels()
+            lines.extend(line1)
+            labels.extend(label1)
+        
+        if y2_param:
+            line2, label2 = ax2.get_legend_handles_labels()
+            lines.extend(line2)
+            labels.extend(label2)
+        
+        if y3_param:
+            line3, label3 = ax3.get_legend_handles_labels()
+            lines.extend(line3)
+            labels.extend(label3)
+        
+        # Add the legend
+        if lines and labels:
+            ax1.legend(lines, labels, loc='best')
+        
+        # Adjust layout
+        self.custom_canvas.fig.tight_layout()
+        
+        # Redraw the canvas
+        self.custom_canvas.draw()
     
     def populate_filters(self):
         """Populate filter dropdowns with values from the data"""
@@ -710,6 +1079,28 @@ class DataAnalysisWidget(QWidget):
         if self.bullet_brand_combo.currentText() != "All":
             filtered_df = filtered_df[filtered_df["bullet_brand"] == self.bullet_brand_combo.currentText()]
         
+        # Apply bullet weight filter
+        if self.bullet_weight_min.text() and self.bullet_weight_max.text():
+            try:
+                min_bullet_weight = float(self.bullet_weight_min.text())
+                max_bullet_weight = float(self.bullet_weight_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "bullet_weight_gr" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["bullet_weight_gr"].notna()
+                    mask = mask & (filtered_df["bullet_weight_gr"] >= min_bullet_weight)
+                    mask = mask & (filtered_df["bullet_weight_gr"] <= max_bullet_weight)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'bullet_weight_gr' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Bullet Weight filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Bullet Weight filter: {e}")
+        
         # Apply powder brand filter
         if self.powder_brand_combo.currentText() != "All":
             filtered_df = filtered_df[filtered_df["powder_brand"] == self.powder_brand_combo.currentText()]
@@ -735,6 +1126,50 @@ class DataAnalysisWidget(QWidget):
                 print(f"Error converting Charge filter values: {e}")
             except Exception as e:
                 print(f"Error applying Charge filter: {e}")
+        
+        # Apply COAL filter
+        if self.coal_min.text() and self.coal_max.text():
+            try:
+                min_coal = float(self.coal_min.text())
+                max_coal = float(self.coal_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "coal_in" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["coal_in"].notna()
+                    mask = mask & (filtered_df["coal_in"] >= min_coal)
+                    mask = mask & (filtered_df["coal_in"] <= max_coal)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'coal_in' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting COAL filter values: {e}")
+            except Exception as e:
+                print(f"Error applying COAL filter: {e}")
+        
+        # Apply B2O filter
+        if self.b2o_min.text() and self.b2o_max.text():
+            try:
+                min_b2o = float(self.b2o_min.text())
+                max_b2o = float(self.b2o_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "b2o_in" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["b2o_in"].notna()
+                    mask = mask & (filtered_df["b2o_in"] >= min_b2o)
+                    mask = mask & (filtered_df["b2o_in"] <= max_b2o)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'b2o_in' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting B2O filter values: {e}")
+            except Exception as e:
+                print(f"Error applying B2O filter: {e}")
         
         # Apply Results Target filters
         
@@ -1060,8 +1495,16 @@ class DataAnalysisWidget(QWidget):
         # Reset date inputs to default values
         self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
         self.date_to.setDate(QDate.currentDate())  # Default to today
+        
+        # Reset Ammunition filters
+        self.bullet_weight_min.clear()
+        self.bullet_weight_max.clear()
         self.charge_min.clear()
         self.charge_max.clear()
+        self.coal_min.clear()
+        self.coal_max.clear()
+        self.b2o_min.clear()
+        self.b2o_max.clear()
         
         # Reset Results Target filters
         self.shots_min.clear()

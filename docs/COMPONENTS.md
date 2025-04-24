@@ -51,7 +51,7 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 
 The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools for analyzing and visualizing test data. It:
 
-- Displays test data in a table with comprehensive columns
+- Displays test data in a table with comprehensive columns including environment data
 - Provides filtering options for test data with calendar widgets for date selection
 - Generates charts and visualizations for accuracy and velocity metrics
 - Allows filtering by various parameters including group size, velocity, and shot count
@@ -65,6 +65,11 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 - Validates column existence before filtering
 - Handles NaN values in filter operations
 - Provides detailed error messages for troubleshooting
+- Features a dynamic custom plot tab that allows users to:
+  - Select any parameter for the X-axis (powder charge, COAL, B2O, bullet weight, etc.)
+  - Select up to three different parameters for the Y-axes with distinct colors
+  - Generate trend lines with equations for each parameter
+  - Create custom visualizations to explore relationships between any data points
 
 ### Key Classes
 
