@@ -36,7 +36,25 @@ This document provides guidelines for developers working on the Precision Rifle 
 
 4. Run the application:
    ```bash
+   # Windows
+   start_app.bat
+
+   # macOS/Linux
+   ./start_app.command
+   ```
+
+   Alternatively, you can run the Python script directly:
+   ```bash
    python run.py
+   ```
+
+5. Terminating the application:
+   ```bash
+   # Windows
+   kill_app.bat
+
+   # macOS/Linux
+   ./kill_app.sh
    ```
 
 ## Development Workflow
@@ -202,6 +220,42 @@ Examples:
    ```
 
 6. Create a release on GitHub with release notes
+
+## Application Startup and Shutdown
+
+The application includes scripts for proper startup and shutdown on different platforms:
+
+### Startup Scripts
+
+- **start_app.command** (macOS/Linux): Checks for running instances, kills them, checks dependencies, and starts the application
+- **start_app.bat** (Windows): Performs the same functions as the macOS/Linux script but with Windows-specific commands
+
+These scripts ensure that:
+- Only one instance of the application runs at a time
+- All dependencies are installed
+- The application starts with a clean environment
+
+### Shutdown Scripts
+
+- **kill_app.sh** (macOS/Linux): Kills any running instances of the application
+- **kill_app.bat** (Windows): Kills any running instances of the application on Windows
+
+These scripts ensure that:
+- No orphaned processes are left running
+- The application can be properly restarted without manual intervention
+
+### Implementation Details
+
+The startup scripts:
+1. Check for running instances and kill them
+2. Check if Python and pip are installed
+3. Check if all dependencies are installed and install missing ones
+4. Start the application
+
+The shutdown scripts:
+1. Find processes running the application
+2. Terminate these processes
+3. Provide feedback on the termination status
 
 ## Testing
 

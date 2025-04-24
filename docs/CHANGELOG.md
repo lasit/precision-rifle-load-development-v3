@@ -12,12 +12,18 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Window title showing the active database
 - Automatic refresh of test lists when switching databases
 - Migration support for existing settings
+- Kill scripts for properly terminating the application on all platforms
+- Improved application startup with automatic cleanup of previous instances
+- Two-column layout in the View Test tab for better organization
+- Zoomable and pannable target images
 
 ### Changed
 - Improved settings management with platform-specific storage locations
 - Enhanced data loader to support multiple database directories
 - Updated documentation with Google Drive setup instructions
 - Refactored code for better maintainability
+- Fixed menu bar visibility on macOS
+- Improved platform-specific startup and shutdown scripts
 
 ### Fixed
 - Issue with test list not refreshing after settings changes

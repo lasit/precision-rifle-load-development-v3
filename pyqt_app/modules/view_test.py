@@ -1,27 +1,152 @@
 """
-View Test Module for the Reloading App
+View Test Module for the Precision Rifle Load Development App
 Provides detailed view of a single selected test, allowing editing.
+
+This module defines the ViewTestWidget class, which displays and allows editing
+of test data. It includes fields for test information, platform details,
+ammunition components, environmental conditions, and results.
 """
 
 import os
 import sys
-import yaml # Added for YAML loading/saving
+import yaml
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                              QPushButton, QFormLayout, QLineEdit, QGroupBox, QScrollArea,
-                             QMessageBox, QStyle, QDoubleSpinBox, QDateEdit, QTextEdit) # Added QDateEdit, QTextEdit
-from PyQt6.QtCore import Qt, pyqtSignal, QDate
-from PyQt6.QtGui import QPixmap # Added for image display
+                             QMessageBox, QStyle, QDoubleSpinBox, QDateEdit, QTextEdit,
+                             QSlider, QToolBar, QSizePolicy)
+from PyQt6.QtCore import Qt, pyqtSignal, QDate, QPoint, QRect, QSize, QRectF
+from PyQt6.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent, QTransform, QCursor
 
 # Add parent directory to path to import utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# Assuming utils.data_loader might have functions to load single test data later
-# from utils.data_loader import load_single_test_data, save_group_data # Need a save function too
+# Import settings manager and data loader
+from utils.settings_manager import SettingsManager
 
 # Path to the Component_List.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "Component_List.yaml"
 )
+
+class ZoomableImageLabel(QLabel):
+    """A QLabel that supports zooming and panning of its pixmap."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(560, 420)  # 40% larger than original 400x300
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setStyleSheet("border: 1px solid gray;")
+        
+        # Enable mouse tracking for panning
+        self.setMouseTracking(True)
+        
+        # Initialize variables
+        self._pixmap = QPixmap()
+        self._zoom_factor = 1.0
+        self._pan_start_pos = QPoint()
+        self._panning = False
+        self._offset = QPoint(0, 0)
+        
+        # Set focus policy to accept wheel events
+        self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        
+        # Set cursor to indicate the image is pannable
+        self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
+    
+    def setPixmap(self, pixmap):
+        """Set the pixmap and reset zoom and pan."""
+        self._pixmap = pixmap
+        self._zoom_factor = 1.0
+        self._offset = QPoint(0, 0)
+        self._update_pixmap()
+    
+    def _update_pixmap(self):
+        """Update the displayed pixmap based on zoom and pan."""
+        if self._pixmap.isNull():
+            super().setPixmap(QPixmap())
+            return
+        
+        # Calculate the scaled size
+        scaled_size = self._pixmap.size() * self._zoom_factor
+        
+        # Create a new pixmap with the scaled size
+        scaled_pixmap = self._pixmap.scaled(
+            scaled_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        
+        # Calculate the visible area
+        visible_rect = QRect(self._offset, self.size())
+        
+        # Create a new pixmap for the visible area
+        visible_pixmap = QPixmap(self.size())
+        visible_pixmap.fill(Qt.GlobalColor.transparent)
+        
+        # Paint the scaled pixmap onto the visible pixmap
+        painter = QPainter(visible_pixmap)
+        
+        # Calculate the position to center the image
+        x = (self.width() - scaled_pixmap.width()) // 2 - self._offset.x()
+        y = (self.height() - scaled_pixmap.height()) // 2 - self._offset.y()
+        
+        painter.drawPixmap(x, y, scaled_pixmap)
+        painter.end()
+        
+        # Set the visible pixmap to the label
+        super().setPixmap(visible_pixmap)
+    
+    def wheelEvent(self, event):
+        """Handle mouse wheel events for zooming."""
+        if self._pixmap.isNull():
+            return
+        
+        # Get the mouse position
+        pos = event.position().toPoint()
+        
+        # Calculate zoom factor
+        delta = event.angleDelta().y()
+        zoom_in = delta > 0
+        
+        # Adjust zoom factor
+        if zoom_in:
+            self._zoom_factor *= 1.2
+        else:
+            self._zoom_factor /= 1.2
+        
+        # Limit zoom factor
+        self._zoom_factor = max(0.1, min(10.0, self._zoom_factor))
+        
+        # Update the pixmap
+        self._update_pixmap()
+    
+    def mousePressEvent(self, event):
+        """Handle mouse press events for panning."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._panning = True
+            self._pan_start_pos = event.pos()
+            self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
+    
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release events for panning."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._panning = False
+            self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
+    
+    def mouseMoveEvent(self, event):
+        """Handle mouse move events for panning."""
+        if self._panning:
+            # Calculate the offset
+            delta = event.pos() - self._pan_start_pos
+            self._offset -= delta
+            self._pan_start_pos = event.pos()
+            
+            # Update the pixmap
+            self._update_pixmap()
+    
+    def resizeEvent(self, event):
+        """Handle resize events."""
+        self._update_pixmap()
 
 class ViewTestWidget(QWidget):
     """Widget for displaying and editing details of a single test"""
@@ -33,7 +158,11 @@ class ViewTestWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        self.tests_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tests")
+        # Get settings manager
+        self.settings_manager = SettingsManager.get_instance()
+        
+        # Get tests directory from settings manager
+        self.tests_dir = self.settings_manager.get_tests_directory()
         self.current_test_id = None
         self.test_data = {} # To hold loaded test data (from group.yaml)
         
@@ -62,16 +191,27 @@ class ViewTestWidget(QWidget):
         # Widget inside scroll area to hold the form layouts
         scroll_content = QWidget()
         scroll_area.setWidget(scroll_content)
-        details_layout = QVBoxLayout(scroll_content) # Main layout for details
-
-        # --- Test Details Form ---
-        details_layout.addWidget(self._create_test_info_group())
-        details_layout.addWidget(self._create_platform_group())
-        details_layout.addWidget(self._create_ammunition_group())
-        details_layout.addWidget(self._create_environment_group())
-        details_layout.addWidget(self._create_results_group())
-        details_layout.addWidget(self._create_image_group())
-        details_layout.addStretch() # Push groups to the top
+        
+        # Create a horizontal layout for the two columns
+        two_column_layout = QHBoxLayout(scroll_content)
+        
+        # Left column layout
+        left_column = QVBoxLayout()
+        left_column.addWidget(self._create_test_info_group())
+        left_column.addWidget(self._create_platform_group())
+        left_column.addWidget(self._create_ammunition_group())
+        left_column.addWidget(self._create_environment_group())
+        left_column.addStretch() # Push groups to the top
+        
+        # Right column layout
+        right_column = QVBoxLayout()
+        right_column.addWidget(self._create_image_group())
+        right_column.addWidget(self._create_results_group())
+        right_column.addStretch() # Push groups to the top
+        
+        # Add columns to the two-column layout
+        two_column_layout.addLayout(left_column, 1)  # 1:1 ratio
+        two_column_layout.addLayout(right_column, 1)
 
         # Buttons layout
         buttons_layout = QHBoxLayout()
@@ -233,6 +373,8 @@ class ViewTestWidget(QWidget):
     
     def refresh(self):
         """Refresh the widget data (test IDs list)"""
+        # Update tests directory from settings manager
+        self.tests_dir = self.settings_manager.get_tests_directory()
         self.populate_test_ids()
         self.refresh_component_lists()
         
@@ -415,6 +557,17 @@ class ViewTestWidget(QWidget):
         container_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
         
         # Results Target group
+        target_group = self._create_results_target_group()
+        container_layout.addWidget(target_group)
+        
+        # Results Velocity group
+        velocity_group = self._create_results_velocity_group()
+        container_layout.addWidget(velocity_group)
+        
+        return container
+    
+    def _create_results_target_group(self):
+        """Create the Results Target group"""
         target_group = QGroupBox("Results Target")
         target_layout = QFormLayout(target_group)
         
@@ -442,9 +595,10 @@ class ViewTestWidget(QWidget):
         target_layout.addRow("POA Horizontal-X (mm):", self.poi_x_mm_edit)
         target_layout.addRow("POA Vertical-Y (mm):", self.poi_y_mm_edit)
         
-        container_layout.addWidget(target_group)
-        
-        # Results Velocity group
+        return target_group
+    
+    def _create_results_velocity_group(self):
+        """Create the Results Velocity group"""
         velocity_group = QGroupBox("Results Velocity")
         velocity_layout = QFormLayout(velocity_group)
         
@@ -456,9 +610,7 @@ class ViewTestWidget(QWidget):
         velocity_layout.addRow("SD Velocity (f/s):", self.sd_velocity_edit)
         velocity_layout.addRow("ES Velocity (f/s):", self.es_velocity_edit)
         
-        container_layout.addWidget(velocity_group)
-        
-        return container
+        return velocity_group
         
     def _create_environment_group(self):
         group = QGroupBox("Environment")
@@ -492,11 +644,19 @@ class ViewTestWidget(QWidget):
     def _create_image_group(self):
         group = QGroupBox("Target Image")
         layout = QVBoxLayout(group)
-        self.image_label = QLabel("Image will be displayed here")
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setMinimumSize(400, 300) # Example size
-        self.image_label.setStyleSheet("border: 1px solid gray;") # Add border for visibility
+        
+        # Use the zoomable image label instead of a regular QLabel
+        self.image_label = ZoomableImageLabel()
+        self.image_label.setText("Image will be displayed here")
+        
+        # Add instructions label
+        instructions = QLabel("Use mouse wheel to zoom, click and drag to pan")
+        instructions.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        instructions.setStyleSheet("font-style: italic; color: gray;")
+        
         layout.addWidget(self.image_label)
+        layout.addWidget(instructions)
+        
         return group
 
     def populate_details(self):

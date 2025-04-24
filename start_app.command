@@ -3,6 +3,10 @@
 # Change to the directory where the script is located
 cd "$(dirname "$0")"
 
+# Kill any running instances of the application
+echo "Checking for running instances..."
+./kill_app.sh
+
 # Check if pip is installed
 if ! command -v pip3 &> /dev/null; then
     echo "pip3 is not installed. Please install Python 3 and pip3 first."

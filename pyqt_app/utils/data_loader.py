@@ -1,6 +1,12 @@
 """
-Data Loader Utility for the Reloading App
-Handles loading and parsing test data from files
+Data Loader Utility for the Precision Rifle Load Development App
+Handles loading and parsing test data from files.
+
+This module provides functions for:
+- Loading test data from YAML files
+- Parsing test information from directory names
+- Loading chronograph data from CSV files
+- Combining all test data into a DataFrame for analysis
 """
 
 import os
@@ -9,6 +15,9 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
+
+# Import settings manager
+from utils.settings_manager import SettingsManager
 
 
 def extract_test_info_from_path(test_path):
@@ -235,19 +244,34 @@ def load_chronograph_data(test_path):
         }
 
 
-def load_all_test_data(tests_dir):
+def load_all_test_data(tests_dir=None):
     """
     Load data from all test directories
     
     Args:
-        tests_dir (str): Path to the directory containing test directories
+        tests_dir (str, optional): Path to the directory containing test directories.
+            If None, the path will be obtained from the settings manager.
         
     Returns:
         pandas.DataFrame: DataFrame containing all test data
     """
+    # If tests_dir is not provided, get it from the settings manager
+    if tests_dir is None:
+        settings_manager = SettingsManager.get_instance()
+        tests_dir = settings_manager.get_tests_directory()
+    
+    # Check if the directory exists
+    if not os.path.isdir(tests_dir):
+        print(f"Warning: Tests directory does not exist: {tests_dir}")
+        return pd.DataFrame()
+    
     # Get all test directories
-    test_dirs = [os.path.join(tests_dir, d) for d in os.listdir(tests_dir) 
-                if os.path.isdir(os.path.join(tests_dir, d)) and not d.startswith('.')]
+    try:
+        test_dirs = [os.path.join(tests_dir, d) for d in os.listdir(tests_dir) 
+                    if os.path.isdir(os.path.join(tests_dir, d)) and not d.startswith('.')]
+    except Exception as e:
+        print(f"Error listing test directories: {e}")
+        return pd.DataFrame()
     
     # Load data from each test directory
     test_data = []
@@ -275,6 +299,5 @@ def load_all_test_data(tests_dir):
 
 if __name__ == "__main__":
     # Example usage
-    tests_dir = "../tests"
-    df = load_all_test_data(tests_dir)
+    df = load_all_test_data()  # Uses the settings manager to get the tests directory
     print(df.head())

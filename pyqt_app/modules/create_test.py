@@ -14,6 +14,7 @@ from PyQt6.QtCore import Qt, QDate, pyqtSignal
 
 # Add parent directory to path to import utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.settings_manager import SettingsManager
 
 # Path to the Component_List.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
@@ -30,7 +31,11 @@ class CreateTestWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        self.tests_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tests")
+        # Get settings manager
+        self.settings_manager = SettingsManager.get_instance()
+        
+        # Get tests directory from settings manager
+        self.tests_dir = self.settings_manager.get_tests_directory()
         
         # Load component lists
         self.component_lists = self.load_component_lists()
@@ -58,6 +63,10 @@ class CreateTestWidget(QWidget):
 
     def refresh(self):
         """Refresh the widget data (reload component lists)"""
+        # Update tests directory from settings manager
+        self.tests_dir = self.settings_manager.get_tests_directory()
+        
+        # Reload component lists
         self.component_lists = self.load_component_lists()
         
         # Update dropdowns with new component lists

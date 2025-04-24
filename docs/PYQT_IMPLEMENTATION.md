@@ -48,25 +48,49 @@ QMainWindow (MainWindow)
         └── QTabWidget (tabs)
             ├── QWidget (ViewTestWidget)
             │   └── QVBoxLayout
-            │       ├── QComboBox (test_selector)
-            │       └── QSplitter
-            │           ├── QScrollArea (left_panel)
-            │           │   └── QWidget
-            │           │       └── QFormLayout
-            │           │           ├── QLineEdit (date_edit)
-            │           │           ├── QComboBox (caliber_combo)
-            │           │           └── ...
-            │           └── QScrollArea (right_panel)
-            │               └── QWidget
-            │                   └── QVBoxLayout
-            │                       ├── QGroupBox (target_group)
+            │       ├── QHBoxLayout (selection_layout)
+            │       │   ├── QLabel ("Select Test ID:")
+            │       │   └── QComboBox (test_id_combo)
+            │       └── QScrollArea
+            │           └── QWidget (scroll_content)
+            │               └── QHBoxLayout (two_column_layout)
+            │                   ├── QVBoxLayout (left_column)
+            │                   │   ├── QGroupBox ("Test Information")
+            │                   │   │   └── QFormLayout
+            │                   │   │       ├── QDateEdit (date_edit)
+            │                   │   │       ├── QComboBox (distance_combo)
+            │                   │   │       └── QTextEdit (notes_edit)
+            │                   │   ├── QGroupBox ("Platform")
+            │                   │   │   └── QFormLayout
+            │                   │   │       ├── QComboBox (calibre_combo)
+            │                   │   │       └── QComboBox (rifle_combo)
+            │                   │   ├── QGroupBox ("Ammunition")
+            │                   │   │   └── QFormLayout
+            │                   │   │       ├── QComboBox (bullet_brand_combo)
+            │                   │   │       ├── QComboBox (bullet_model_combo)
+            │                   │   │       └── ...
+            │                   │   └── QGroupBox ("Environment")
+            │                   │       └── QFormLayout
+            │                   │           ├── QLineEdit (temperature_c_edit)
+            │                   │           ├── QLineEdit (humidity_percent_edit)
+            │                   │           └── ...
+            │                   └── QVBoxLayout (right_column)
+            │                       ├── QGroupBox ("Target Image")
             │                       │   └── QVBoxLayout
-            │                       │       ├── QLabel (target_image)
-            │                       │       └── ...
-            │                       └── QGroupBox (velocity_group)
+            │                       │       ├── ZoomableImageLabel (image_label)
+            │                       │       └── QLabel (instructions)
+            │                       └── QWidget (results_container)
             │                           └── QVBoxLayout
-            │                               ├── QLabel (velocity_label)
-            │                               └── ...
+            │                               ├── QGroupBox ("Results Target")
+            │                               │   └── QFormLayout
+            │                               │       ├── QLineEdit (shots_edit)
+            │                               │       ├── QLineEdit (group_es_mm_edit)
+            │                               │       └── ...
+            │                               └── QGroupBox ("Results Velocity")
+            │                                   └── QFormLayout
+            │                                       ├── QLineEdit (avg_velocity_edit)
+            │                                       ├── QLineEdit (sd_velocity_edit)
+            │                                       └── ...
             ├── QWidget (DataAnalysisWidget)
             │   └── ...
             ├── QWidget (CreateTestWidget)
@@ -125,32 +149,46 @@ self.save_button.clicked.connect(self.save_test)
 
 The application includes several custom widgets to provide specialized functionality:
 
-### Target Image Widget
+### ZoomableImageLabel
 
 A custom widget for displaying and interacting with target images:
 
 ```python
-class TargetImageWidget(QLabel):
-    """Widget for displaying and interacting with target images.
-    
-    This widget extends QLabel to provide zooming and panning
-    functionality for target images.
-    """
+class ZoomableImageLabel(QLabel):
+    """A QLabel that supports zooming and panning of its pixmap."""
     
     def __init__(self, parent=None):
-        """Initialize the target image widget."""
         super().__init__(parent)
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(560, 420)  # 40% larger than original 400x300
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setFrameShape(QFrame.Shape.Box)
-        self.setScaledContents(False)
+        self.setStyleSheet("border: 1px solid gray;")
         
-        self.zoom_factor = 1.0
-        self.pan_offset = QPoint(0, 0)
-        self.panning = False
-        self.last_pan_pos = QPoint(0, 0)
-        
+        # Enable mouse tracking for panning
         self.setMouseTracking(True)
+        
+        # Initialize variables
+        self._pixmap = QPixmap()
+        self._zoom_factor = 1.0
+        self._pan_start_pos = QPoint()
+        self._panning = False
+        self._offset = QPoint(0, 0)
+        
+        # Set focus policy to accept wheel events
+        self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        
+        # Set cursor to indicate the image is pannable
+        self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
+    
+    def setPixmap(self, pixmap):
+        """Set the pixmap and reset zoom and pan."""
+        self._pixmap = pixmap
+        self._zoom_factor = 1.0
+        self._offset = QPoint(0, 0)
+        self._update_pixmap()
+    
+    def _update_pixmap(self):
+        """Update the displayed pixmap based on zoom and pan."""
+        # ...
     
     def wheelEvent(self, event):
         """Handle mouse wheel events for zooming."""
@@ -160,16 +198,16 @@ class TargetImageWidget(QLabel):
         """Handle mouse press events for panning."""
         # ...
     
-    def mouseMoveEvent(self, event):
-        """Handle mouse move events for panning."""
-        # ...
-    
     def mouseReleaseEvent(self, event):
         """Handle mouse release events for panning."""
         # ...
     
-    def update_image(self):
-        """Update the displayed image with current zoom and pan."""
+    def mouseMoveEvent(self, event):
+        """Handle mouse move events for panning."""
+        # ...
+    
+    def resizeEvent(self, event):
+        """Handle resize events."""
         # ...
 ```
 

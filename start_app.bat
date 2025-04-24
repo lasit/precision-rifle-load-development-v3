@@ -7,6 +7,10 @@ echo.
 :: Change to the directory where the script is located
 cd /d "%~dp0"
 
+:: Kill any running instances of the application
+echo Checking for running instances...
+call kill_app.bat
+
 :: Check if Python is installed
 where python >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (

@@ -27,17 +27,25 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - Displays a list of available tests
 - Shows test details in a two-column layout
 - Allows editing of test parameters
-- Provides interactive target image viewing
+- Provides interactive target image viewing with zoom and pan capabilities
 - Saves changes back to the test file
+
+### Key Classes
+
+- `ViewTestWidget`: Main widget for viewing and editing tests
+- `ZoomableImageLabel`: Custom QLabel that supports zooming and panning of target images
 
 ### Key Methods
 
 - `__init__()`: Initializes the widget and sets up the UI
-- `setup_ui()`: Sets up the UI components
+- `setup_ui()`: Sets up the UI components with a two-column layout
 - `load_test()`: Loads a test from a file
 - `save_test()`: Saves changes to a test file
 - `refresh()`: Refreshes the list of available tests
 - `refresh_component_lists()`: Refreshes the component dropdown lists
+- `_create_image_group()`: Creates the target image group with zoom and pan capabilities
+- `_create_results_target_group()`: Creates the Results Target group
+- `_create_results_velocity_group()`: Creates the Results Velocity group
 
 ## Data Analysis Module
 

@@ -26,6 +26,7 @@ import sys
 # Add parent directory to path to import utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.data_loader import load_all_test_data
+from utils.settings_manager import SettingsManager
 
 
 class MatplotlibCanvas(FigureCanvas):
@@ -115,6 +116,12 @@ class DataAnalysisWidget(QWidget):
         # Initialize data
         self.all_data = pd.DataFrame()
         self.filtered_data = pd.DataFrame()
+        
+        # For backward compatibility with existing code
+        self.group_min = None
+        self.group_max = None
+        self.velocity_min = None
+        self.velocity_max = None
         
         # Set up the UI
         self.setup_ui()
@@ -428,8 +435,11 @@ class DataAnalysisWidget(QWidget):
     def load_data(self):
         """Load test data from files"""
         try:
-            # Get the path to the tests directory
-            tests_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tests")
+            # Get settings manager
+            settings_manager = SettingsManager.get_instance()
+            
+            # Get the path to the tests directory from settings manager
+            tests_dir = settings_manager.get_tests_directory()
             
             # Load all test data
             self.all_data = load_all_test_data(tests_dir)
