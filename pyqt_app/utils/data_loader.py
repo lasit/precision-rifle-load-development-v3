@@ -1,0 +1,280 @@
+"""
+Data Loader Utility for the Reloading App
+Handles loading and parsing test data from files
+"""
+
+import os
+import yaml
+import pandas as pd
+import numpy as np
+import re
+from datetime import datetime
+
+
+def extract_test_info_from_path(test_path):
+    """
+    Extract test information from the test directory path
+    
+    Args:
+        test_path (str): Path to the test directory
+        
+    Returns:
+        dict: Dictionary containing extracted test information
+    """
+    # Get the directory name (last part of the path)
+    dir_name = os.path.basename(test_path)
+    
+    # Parse the directory name to extract test information
+    # Expected format: YYYY-MM-DD__distance_calibre_rifle_case_bullet-brand_bullet-model_bullet-weight_powder-brand_powder-model_powder-charge_coal_b2o_primer
+    try:
+        # Split by double underscore to separate date and test info
+        date_str, test_info = dir_name.split('__')
+        
+        # Parse test info parts
+        parts = test_info.split('_')
+        
+        # Extract basic information
+        distance = parts[0]  # e.g., "100m"
+        calibre = parts[1]   # e.g., "223"
+        rifle = parts[2]     # e.g., "Tikka-T3X"
+        
+        # Extract case brand (if available)
+        case_brand_idx = 3
+        case_brand = parts[case_brand_idx]  # e.g., "Hornady"
+        
+        # Extract bullet information
+        bullet_brand_idx = 4
+        bullet_brand = parts[bullet_brand_idx]  # e.g., "Hornady"
+        bullet_model = parts[bullet_brand_idx + 1]  # e.g., "ELD-M"
+        bullet_weight = parts[bullet_brand_idx + 2]  # e.g., "75gr"
+        
+        # Extract powder information
+        powder_brand_idx = bullet_brand_idx + 3
+        powder_brand = parts[powder_brand_idx]  # e.g., "ADI"
+        powder_model = parts[powder_brand_idx + 1]  # e.g., "2208"
+        powder_charge = parts[powder_brand_idx + 2]  # e.g., "23.44gr"
+        
+        # Extract cartridge dimensions
+        coal_idx = powder_brand_idx + 3
+        coal = parts[coal_idx]  # e.g., "2.410in"
+        b2o = parts[coal_idx + 1]  # e.g., "1.784in"
+        
+        # Extract primer (if available)
+        primer_idx = coal_idx + 2
+        primer = parts[primer_idx] if len(parts) > primer_idx else "Unknown"
+        
+        # Extract numeric values
+        distance_value = float(re.search(r'(\d+)', distance).group(1))
+        bullet_weight_value = float(re.search(r'(\d+\.?\d*)', bullet_weight).group(1))
+        powder_charge_value = float(re.search(r'(\d+\.?\d*)', powder_charge).group(1))
+        coal_value = float(re.search(r'(\d+\.?\d*)', coal).group(1))
+        b2o_value = float(re.search(r'(\d+\.?\d*)', b2o).group(1))
+        
+        # Create and return the test info dictionary
+        return {
+            'test_id': dir_name,
+            'date': date_str,
+            'distance': distance,
+            'distance_m': distance_value,
+            'calibre': calibre,
+            'rifle': rifle.replace('-', ' '),
+            'case_brand': case_brand,
+            'bullet_brand': bullet_brand,
+            'bullet_model': bullet_model,
+            'bullet_weight': bullet_weight,
+            'bullet_weight_gr': bullet_weight_value,
+            'powder_brand': powder_brand,
+            'powder_model': powder_model,
+            'powder_charge': powder_charge,
+            'powder_charge_gr': powder_charge_value,
+            'coal': coal,
+            'coal_in': coal_value,
+            'b2o': b2o,
+            'b2o_in': b2o_value,
+            'primer': primer
+        }
+    except (ValueError, IndexError) as e:
+        # If parsing fails, return a minimal dictionary with the test_id
+        return {
+            'test_id': dir_name,
+            'date': 'Unknown',
+            'distance': 'Unknown',
+            'distance_m': 0,
+            'calibre': 'Unknown',
+            'rifle': 'Unknown',
+            'case_brand': 'Unknown',
+            'bullet_brand': 'Unknown',
+            'bullet_model': 'Unknown',
+            'bullet_weight': 'Unknown',
+            'bullet_weight_gr': 0,
+            'powder_brand': 'Unknown',
+            'powder_model': 'Unknown',
+            'powder_charge': 'Unknown',
+            'powder_charge_gr': 0,
+            'coal': 'Unknown',
+            'coal_in': 0,
+            'b2o': 'Unknown',
+            'b2o_in': 0,
+            'primer': 'Unknown'
+        }
+
+
+def load_group_data(test_path):
+    """
+    Load group data from the group.yaml file
+    
+    Args:
+        test_path (str): Path to the test directory
+        
+    Returns:
+        dict: Dictionary containing group data and chrono data
+    """
+    group_file = os.path.join(test_path, 'group.yaml')
+    
+    if not os.path.exists(group_file):
+        return {
+            'group_es_mm': 0,
+            'group_es_moa': 0,
+            'mean_radius_mm': 0,
+            'avg_velocity_fps': 0,
+            'sd_fps': 0,
+            'es_fps': 0
+        }
+    
+    try:
+        with open(group_file, 'r') as f:
+            yaml_data = yaml.safe_load(f)
+        
+        if not isinstance(yaml_data, dict):
+            return {
+                'group_es_mm': 0,
+                'group_es_moa': 0,
+                'mean_radius_mm': 0,
+                'avg_velocity_fps': 0,
+                'sd_fps': 0,
+                'es_fps': 0
+            }
+        
+        # Extract relevant group data from the nested structure
+        group_data = yaml_data.get('group', {})
+        
+        # Extract chrono data if available
+        chrono_data = yaml_data.get('chrono', {})
+        
+        return {
+            'group_es_mm': group_data.get('group_es_mm', 0),
+            'group_es_moa': group_data.get('group_es_moa', 0),
+            'mean_radius_mm': group_data.get('mean_radius_mm', 0),
+            'avg_velocity_fps': chrono_data.get('avg_velocity_fps', 0),
+            'sd_fps': chrono_data.get('sd_fps', 0),
+            'es_fps': chrono_data.get('es_fps', 0)
+        }
+    except Exception as e:
+        return {
+            'group_es_mm': 0,
+            'group_es_moa': 0,
+            'mean_radius_mm': 0,
+            'avg_velocity_fps': 0,
+            'sd_fps': 0,
+            'es_fps': 0
+        }
+
+
+def load_chronograph_data(test_path):
+    """
+    Load chronograph data from CSV files
+    
+    Args:
+        test_path (str): Path to the test directory
+        
+    Returns:
+        dict: Dictionary containing chronograph data
+    """
+    # Find CSV files in the test directory
+    csv_files = [f for f in os.listdir(test_path) if f.endswith('.csv') and 'Rifle_Cartridge' in f]
+    
+    if not csv_files:
+        return {
+            'avg_velocity_fps': 0,
+            'sd_fps': 0,
+            'es_fps': 0
+        }
+    
+    try:
+        # Use the first CSV file found
+        csv_file = os.path.join(test_path, csv_files[0])
+        
+        # Read the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Extract velocity data
+        velocities = df['Velocity(fps)'].dropna().values
+        
+        if len(velocities) == 0:
+            return {
+                'avg_velocity_fps': 0,
+                'sd_fps': 0,
+                'es_fps': 0
+            }
+        
+        # Calculate velocity statistics
+        avg_velocity = np.mean(velocities)
+        sd_velocity = np.std(velocities)
+        es_velocity = np.max(velocities) - np.min(velocities)
+        
+        return {
+            'avg_velocity_fps': avg_velocity,
+            'sd_fps': sd_velocity,
+            'es_fps': es_velocity
+        }
+    except Exception as e:
+        return {
+            'avg_velocity_fps': 0,
+            'sd_fps': 0,
+            'es_fps': 0
+        }
+
+
+def load_all_test_data(tests_dir):
+    """
+    Load data from all test directories
+    
+    Args:
+        tests_dir (str): Path to the directory containing test directories
+        
+    Returns:
+        pandas.DataFrame: DataFrame containing all test data
+    """
+    # Get all test directories
+    test_dirs = [os.path.join(tests_dir, d) for d in os.listdir(tests_dir) 
+                if os.path.isdir(os.path.join(tests_dir, d)) and not d.startswith('.')]
+    
+    # Load data from each test directory
+    test_data = []
+    for test_dir in test_dirs:
+        # Extract test info from the directory path
+        test_info = extract_test_info_from_path(test_dir)
+        
+        # Load group data
+        group_data = load_group_data(test_dir)
+        
+        # We'll use the group.yaml chrono data instead of the CSV data
+        # as it's more reliable and consistent with what's shown in the View Test tab
+        
+        # Combine all data (group_data already contains chrono data)
+        test_data.append({**test_info, **group_data})
+    
+    # Create a DataFrame from the test data
+    df = pd.DataFrame(test_data)
+    
+    # Sort by date and powder charge
+    df = df.sort_values(['date', 'powder_charge_gr'])
+    
+    return df
+
+
+if __name__ == "__main__":
+    # Example usage
+    tests_dir = "../tests"
+    df = load_all_test_data(tests_dir)
+    print(df.head())

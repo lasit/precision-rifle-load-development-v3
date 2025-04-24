@@ -1,0 +1,957 @@
+"""
+Data Analysis Module for the Reloading App
+Provides visualization and analysis of test data
+"""
+
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
+    QSlider, QPushButton, QTableView, QSplitter, QTabWidget,
+    QGroupBox, QFormLayout, QLineEdit, QCheckBox, QSizePolicy
+)
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal
+from PyQt6.QtGui import QStandardItemModel, QStandardItem
+
+import matplotlib
+matplotlib.use('QtAgg')  # Use QtAgg which works with both PyQt5 and PyQt6
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+
+import pandas as pd
+import numpy as np
+import os
+import yaml
+import sys
+
+# Add parent directory to path to import utils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.data_loader import load_all_test_data
+
+
+class MatplotlibCanvas(FigureCanvas):
+    """Matplotlib canvas for embedding plots in PyQt"""
+    
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        
+        super().__init__(self.fig)
+        self.setParent(parent)
+        
+        # Make the canvas expandable
+        FigureCanvas.setSizePolicy(
+            self,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding
+        )
+        FigureCanvas.updateGeometry(self)
+
+
+class TestDataModel(QAbstractTableModel):
+    """Model for displaying test data in a table view"""
+    
+    def __init__(self, data=None):
+        super().__init__()
+        self._data = data if data is not None else pd.DataFrame()
+        self._display_columns = [
+            "test_id", "date", "distance_m", "calibre", "rifle", 
+            "bullet_brand", "bullet_model", "bullet_weight_gr", 
+            "powder_brand", "powder_model", "powder_charge_gr",
+            "group_es_mm", "group_es_moa", "mean_radius_mm",
+            "avg_velocity_fps", "sd_fps", "es_fps"
+        ]
+        
+        # Ensure all columns exist in the dataframe
+        for col in self._display_columns:
+            if col not in self._data.columns:
+                self._data[col] = None
+        
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+    
+    def columnCount(self, parent=QModelIndex()):
+        return len(self._display_columns)
+    
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+            return None
+        
+        column_name = self._display_columns[index.column()]
+        value = self._data.iloc[index.row()][column_name]
+        
+        # Format numeric values
+        if isinstance(value, (int, float)):
+            if column_name in ["group_es_mm", "group_es_moa", "mean_radius_mm"]:
+                return f"{value:.2f}"
+            elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
+                return f"{value:.1f}"
+            else:
+                return str(value)
+        
+        return str(value)
+    
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+            # Return user-friendly column names
+            column_name = self._display_columns[section]
+            # Convert snake_case to Title Case with spaces
+            return " ".join(word.capitalize() for word in column_name.split("_"))
+        
+        return super().headerData(section, orientation, role)
+    
+    def update_data(self, data):
+        """Update the model with new data"""
+        self.beginResetModel()
+        self._data = data
+        self.endResetModel()
+
+
+class DataAnalysisWidget(QWidget):
+    """Widget for data analysis and visualization"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Initialize data
+        self.all_data = pd.DataFrame()
+        self.filtered_data = pd.DataFrame()
+        
+        # Set up the UI
+        self.setup_ui()
+        
+        # Load test data
+        self.load_data()
+    
+    def setup_ui(self):
+        """Set up the user interface"""
+        # Main layout
+        main_layout = QVBoxLayout(self)
+        
+        # Create splitter for resizable sections
+        splitter = QSplitter(Qt.Orientation.Vertical)
+        main_layout.addWidget(splitter)
+        
+        # Top section: Filters
+        filter_widget = QWidget()
+        filter_layout = QVBoxLayout(filter_widget)
+        
+        # Filter header
+        filter_header = QHBoxLayout()
+        filter_label = QLabel("Filter Tests")
+        filter_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        filter_header.addWidget(filter_label)
+        
+        # Reset button
+        reset_button = QPushButton("Reset All Filters")
+        reset_button.clicked.connect(self.reset_filters)
+        filter_header.addStretch()
+        filter_header.addWidget(reset_button)
+        
+        filter_layout.addLayout(filter_header)
+        
+        # Filter groups in horizontal layout
+        filter_groups = QHBoxLayout()
+        
+        # Test Info filters
+        test_info_group = QGroupBox("Test Info")
+        test_info_layout = QFormLayout(test_info_group)
+        
+        # Date range filter (placeholder)
+        self.date_from = QLineEdit()
+        self.date_to = QLineEdit()
+        date_layout = QHBoxLayout()
+        date_layout.addWidget(self.date_from)
+        date_layout.addWidget(QLabel("to"))
+        date_layout.addWidget(self.date_to)
+        test_info_layout.addRow("Date Range:", date_layout)
+        
+        # Distance filter
+        self.distance_combo = QComboBox()
+        self.distance_combo.addItems(["All", "100m", "200m", "300m"])
+        test_info_layout.addRow("Distance:", self.distance_combo)
+        
+        filter_groups.addWidget(test_info_group)
+        
+        # Platform filters
+        platform_group = QGroupBox("Platform")
+        platform_layout = QFormLayout(platform_group)
+        
+        # Calibre filter
+        self.calibre_combo = QComboBox()
+        self.calibre_combo.addItem("All")
+        platform_layout.addRow("Calibre:", self.calibre_combo)
+        
+        # Rifle filter
+        self.rifle_combo = QComboBox()
+        self.rifle_combo.addItem("All")
+        platform_layout.addRow("Rifle:", self.rifle_combo)
+        
+        filter_groups.addWidget(platform_group)
+        
+        # Ammunition filters
+        ammo_group = QGroupBox("Ammunition")
+        ammo_layout = QFormLayout(ammo_group)
+        
+        # Bullet brand filter
+        self.bullet_brand_combo = QComboBox()
+        self.bullet_brand_combo.addItem("All")
+        ammo_layout.addRow("Bullet Brand:", self.bullet_brand_combo)
+        
+        # Powder brand filter
+        self.powder_brand_combo = QComboBox()
+        self.powder_brand_combo.addItem("All")
+        ammo_layout.addRow("Powder Brand:", self.powder_brand_combo)
+        
+        # Powder charge range filter
+        self.charge_min = QLineEdit()
+        self.charge_max = QLineEdit()
+        charge_layout = QHBoxLayout()
+        charge_layout.addWidget(self.charge_min)
+        charge_layout.addWidget(QLabel("to"))
+        charge_layout.addWidget(self.charge_max)
+        ammo_layout.addRow("Charge (gr):", charge_layout)
+        
+        filter_groups.addWidget(ammo_group)
+        
+        # Results Target filters
+        results_target_group = QGroupBox("Results Target")
+        results_target_layout = QFormLayout(results_target_group)
+        
+        # Number of shots filter
+        self.shots_min = QLineEdit()
+        self.shots_max = QLineEdit()
+        shots_layout = QHBoxLayout()
+        shots_layout.addWidget(self.shots_min)
+        shots_layout.addWidget(QLabel("to"))
+        shots_layout.addWidget(self.shots_max)
+        results_target_layout.addRow("Number of shots:", shots_layout)
+        
+        # Group size range filter (renamed to Group ES)
+        self.group_es_min = QLineEdit()
+        self.group_es_max = QLineEdit()
+        group_es_layout = QHBoxLayout()
+        group_es_layout.addWidget(self.group_es_min)
+        group_es_layout.addWidget(QLabel("to"))
+        group_es_layout.addWidget(self.group_es_max)
+        results_target_layout.addRow("Group ES (mm):", group_es_layout)
+        
+        # Group ES MOA filter
+        self.group_es_moa_min = QLineEdit()
+        self.group_es_moa_max = QLineEdit()
+        group_es_moa_layout = QHBoxLayout()
+        group_es_moa_layout.addWidget(self.group_es_moa_min)
+        group_es_moa_layout.addWidget(QLabel("to"))
+        group_es_moa_layout.addWidget(self.group_es_moa_max)
+        results_target_layout.addRow("Group ES (MOA):", group_es_moa_layout)
+        
+        # Mean Radius filter
+        self.mean_radius_min = QLineEdit()
+        self.mean_radius_max = QLineEdit()
+        mean_radius_layout = QHBoxLayout()
+        mean_radius_layout.addWidget(self.mean_radius_min)
+        mean_radius_layout.addWidget(QLabel("to"))
+        mean_radius_layout.addWidget(self.mean_radius_max)
+        results_target_layout.addRow("Mean Radius (mm):", mean_radius_layout)
+        
+        # Group ES Width-X filter
+        self.group_es_x_min = QLineEdit()
+        self.group_es_x_max = QLineEdit()
+        group_es_x_layout = QHBoxLayout()
+        group_es_x_layout.addWidget(self.group_es_x_min)
+        group_es_x_layout.addWidget(QLabel("to"))
+        group_es_x_layout.addWidget(self.group_es_x_max)
+        results_target_layout.addRow("Group ES Width-X (mm):", group_es_x_layout)
+        
+        # Group ES Height-Y filter
+        self.group_es_y_min = QLineEdit()
+        self.group_es_y_max = QLineEdit()
+        group_es_y_layout = QHBoxLayout()
+        group_es_y_layout.addWidget(self.group_es_y_min)
+        group_es_y_layout.addWidget(QLabel("to"))
+        group_es_y_layout.addWidget(self.group_es_y_max)
+        results_target_layout.addRow("Group ES Height-Y (mm):", group_es_y_layout)
+        
+        # POA Horizontal-X filter
+        self.poi_x_min = QLineEdit()
+        self.poi_x_max = QLineEdit()
+        poi_x_layout = QHBoxLayout()
+        poi_x_layout.addWidget(self.poi_x_min)
+        poi_x_layout.addWidget(QLabel("to"))
+        poi_x_layout.addWidget(self.poi_x_max)
+        results_target_layout.addRow("POA Horizontal-X (mm):", poi_x_layout)
+        
+        # POA Vertical-Y filter
+        self.poi_y_min = QLineEdit()
+        self.poi_y_max = QLineEdit()
+        poi_y_layout = QHBoxLayout()
+        poi_y_layout.addWidget(self.poi_y_min)
+        poi_y_layout.addWidget(QLabel("to"))
+        poi_y_layout.addWidget(self.poi_y_max)
+        results_target_layout.addRow("POA Vertical-Y (mm):", poi_y_layout)
+        
+        filter_groups.addWidget(results_target_group)
+        
+        # Results Velocity filters
+        results_velocity_group = QGroupBox("Results Velocity")
+        results_velocity_layout = QFormLayout(results_velocity_group)
+        
+        # Avg Velocity filter (renamed)
+        self.avg_velocity_min = QLineEdit()
+        self.avg_velocity_max = QLineEdit()
+        avg_velocity_layout = QHBoxLayout()
+        avg_velocity_layout.addWidget(self.avg_velocity_min)
+        avg_velocity_layout.addWidget(QLabel("to"))
+        avg_velocity_layout.addWidget(self.avg_velocity_max)
+        results_velocity_layout.addRow("Avg Velocity (f/s):", avg_velocity_layout)
+        
+        # SD Velocity filter
+        self.sd_velocity_min = QLineEdit()
+        self.sd_velocity_max = QLineEdit()
+        sd_velocity_layout = QHBoxLayout()
+        sd_velocity_layout.addWidget(self.sd_velocity_min)
+        sd_velocity_layout.addWidget(QLabel("to"))
+        sd_velocity_layout.addWidget(self.sd_velocity_max)
+        results_velocity_layout.addRow("SD Velocity (f/s):", sd_velocity_layout)
+        
+        # ES Velocity filter
+        self.es_velocity_min = QLineEdit()
+        self.es_velocity_max = QLineEdit()
+        es_velocity_layout = QHBoxLayout()
+        es_velocity_layout.addWidget(self.es_velocity_min)
+        es_velocity_layout.addWidget(QLabel("to"))
+        es_velocity_layout.addWidget(self.es_velocity_max)
+        results_velocity_layout.addRow("ES Velocity (f/s):", es_velocity_layout)
+        
+        filter_groups.addWidget(results_velocity_group)
+        
+        filter_layout.addLayout(filter_groups)
+        
+        # Apply filters button
+        apply_button = QPushButton("Apply Filters")
+        apply_button.clicked.connect(self.apply_filters)
+        filter_layout.addWidget(apply_button)
+        
+        splitter.addWidget(filter_widget)
+        
+        # Middle section: Test table
+        table_widget = QWidget()
+        table_layout = QVBoxLayout(table_widget)
+        
+        # Table header
+        table_header = QHBoxLayout()
+        table_label = QLabel("Filtered Tests")
+        table_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.result_count_label = QLabel("0 tests found")
+        table_header.addWidget(table_label)
+        table_header.addStretch()
+        table_header.addWidget(self.result_count_label)
+        
+        table_layout.addLayout(table_header)
+        
+        # Test table
+        self.test_table = QTableView()
+        self.test_model = TestDataModel()
+        self.test_table.setModel(self.test_model)
+        
+        # Enable sorting
+        self.test_table.setSortingEnabled(True)
+        
+        # Enable selection
+        self.test_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        
+        table_layout.addWidget(self.test_table)
+        
+        splitter.addWidget(table_widget)
+        
+        # Bottom section: Visualization tabs
+        viz_widget = QWidget()
+        viz_layout = QVBoxLayout(viz_widget)
+        
+        # Visualization header
+        viz_header = QLabel("Data Visualization")
+        viz_header.setStyleSheet("font-size: 16px; font-weight: bold;")
+        viz_layout.addWidget(viz_header)
+        
+        # Visualization tabs
+        viz_tabs = QTabWidget()
+        
+        # Accuracy tab
+        accuracy_tab = QWidget()
+        accuracy_layout = QVBoxLayout(accuracy_tab)
+        
+        # Accuracy plot
+        self.accuracy_canvas = MatplotlibCanvas(self, width=5, height=4, dpi=100)
+        accuracy_toolbar = NavigationToolbar(self.accuracy_canvas, self)
+        
+        accuracy_layout.addWidget(accuracy_toolbar)
+        accuracy_layout.addWidget(self.accuracy_canvas)
+        
+        viz_tabs.addTab(accuracy_tab, "Accuracy")
+        
+        # Velocity tab
+        velocity_tab = QWidget()
+        velocity_layout = QVBoxLayout(velocity_tab)
+        
+        # Velocity plot
+        self.velocity_canvas = MatplotlibCanvas(self, width=5, height=4, dpi=100)
+        velocity_toolbar = NavigationToolbar(self.velocity_canvas, self)
+        
+        velocity_layout.addWidget(velocity_toolbar)
+        velocity_layout.addWidget(self.velocity_canvas)
+        
+        viz_tabs.addTab(velocity_tab, "Velocity")
+        
+        # Combined tab
+        combined_tab = QWidget()
+        combined_layout = QVBoxLayout(combined_tab)
+        
+        # Combined plot
+        self.combined_canvas = MatplotlibCanvas(self, width=5, height=4, dpi=100)
+        combined_toolbar = NavigationToolbar(self.combined_canvas, self)
+        
+        combined_layout.addWidget(combined_toolbar)
+        combined_layout.addWidget(self.combined_canvas)
+        
+        viz_tabs.addTab(combined_tab, "Combined")
+        
+        viz_layout.addWidget(viz_tabs)
+        
+        splitter.addWidget(viz_widget)
+        
+        # Set initial splitter sizes
+        splitter.setSizes([200, 300, 400])
+    
+    def refresh(self):
+        """Refresh the widget data (reload test data)"""
+        self.load_data()
+        
+    def load_data(self):
+        """Load test data from files"""
+        try:
+            # Get the path to the tests directory
+            tests_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tests")
+            
+            # Load all test data
+            self.all_data = load_all_test_data(tests_dir)
+            
+            # If no data was loaded, create a sample DataFrame for demonstration
+            if len(self.all_data) == 0:
+                self.all_data = pd.DataFrame({
+                    "test_id": ["sample_test_1", "sample_test_2"],
+                    "date": ["2025-04-15", "2025-04-16"],
+                    "distance_m": [100, 100],
+                    "calibre": [".223", ".223"],
+                    "rifle": ["Tikka T3X", "Tikka T3X"],
+                    "bullet_brand": ["Hornady", "Hornady"],
+                    "bullet_model": ["ELD-M", "ELD-M"],
+                    "bullet_weight_gr": [75.0, 75.0],
+                    "powder_brand": ["ADI", "ADI"],
+                    "powder_model": ["2208", "2208"],
+                    "powder_charge_gr": [23.5, 24.0],
+                    "group_es_mm": [15.2, 12.8],
+                    "group_es_moa": [0.54, 0.45],
+                    "mean_radius_mm": [5.8, 4.9],
+                    "avg_velocity_fps": [2850.5, 2875.2],
+                    "sd_fps": [8.5, 7.2],
+                    "es_fps": [25.0, 22.5]
+                })
+        except Exception as e:
+            # If an error occurs, create a sample DataFrame
+            print(f"Error loading test data: {e}")
+            self.all_data = pd.DataFrame({
+                "test_id": ["sample_test_1", "sample_test_2"],
+                "date": ["2025-04-15", "2025-04-16"],
+                "distance_m": [100, 100],
+                "calibre": [".223", ".223"],
+                "rifle": ["Tikka T3X", "Tikka T3X"],
+                "bullet_brand": ["Hornady", "Hornady"],
+                "bullet_model": ["ELD-M", "ELD-M"],
+                "bullet_weight_gr": [75.0, 75.0],
+                "powder_brand": ["ADI", "ADI"],
+                "powder_model": ["2208", "2208"],
+                "powder_charge_gr": [23.5, 24.0],
+                "group_es_mm": [15.2, 12.8],
+                "group_es_moa": [0.54, 0.45],
+                "mean_radius_mm": [5.8, 4.9],
+                "avg_velocity_fps": [2850.5, 2875.2],
+                "sd_fps": [8.5, 7.2],
+                "es_fps": [25.0, 22.5]
+            })
+        
+        self.filtered_data = self.all_data.copy()
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update result count
+        self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Populate filter dropdowns
+        self.populate_filters()
+        
+        # Create initial plots
+        self.update_plots()
+    
+    def populate_filters(self):
+        """Populate filter dropdowns with values from the data"""
+        # Calibre filter
+        calibres = sorted(self.all_data["calibre"].unique())
+        self.calibre_combo.clear()
+        self.calibre_combo.addItem("All")
+        self.calibre_combo.addItems(calibres)
+        
+        # Rifle filter
+        rifles = sorted(self.all_data["rifle"].unique())
+        self.rifle_combo.clear()
+        self.rifle_combo.addItem("All")
+        self.rifle_combo.addItems(rifles)
+        
+        # Bullet brand filter
+        bullet_brands = sorted(self.all_data["bullet_brand"].unique())
+        self.bullet_brand_combo.clear()
+        self.bullet_brand_combo.addItem("All")
+        self.bullet_brand_combo.addItems(bullet_brands)
+        
+        # Powder brand filter
+        powder_brands = sorted(self.all_data["powder_brand"].unique())
+        self.powder_brand_combo.clear()
+        self.powder_brand_combo.addItem("All")
+        self.powder_brand_combo.addItems(powder_brands)
+    
+    def apply_filters(self):
+        """Apply filters to the data"""
+        filtered_df = self.all_data.copy()
+        
+        # Apply calibre filter
+        if self.calibre_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["calibre"] == self.calibre_combo.currentText()]
+        
+        # Apply rifle filter
+        if self.rifle_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["rifle"] == self.rifle_combo.currentText()]
+        
+        # Apply bullet brand filter
+        if self.bullet_brand_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["bullet_brand"] == self.bullet_brand_combo.currentText()]
+        
+        # Apply powder brand filter
+        if self.powder_brand_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["powder_brand"] == self.powder_brand_combo.currentText()]
+        
+        # Apply charge range filter
+        if self.charge_min.text() and self.charge_max.text():
+            try:
+                min_charge = float(self.charge_min.text())
+                max_charge = float(self.charge_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["powder_charge_gr"] >= min_charge) & 
+                    (filtered_df["powder_charge_gr"] <= max_charge)
+                ]
+            except ValueError:
+                pass
+        
+        # Apply Results Target filters
+        
+        # Number of shots filter
+        if self.shots_min.text() and self.shots_max.text():
+            try:
+                min_shots = int(self.shots_min.text())
+                max_shots = int(self.shots_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["shots"] >= min_shots) & 
+                    (filtered_df["shots"] <= max_shots)
+                ]
+            except ValueError:
+                pass
+        
+        # Group ES (mm) filter
+        if self.group_es_min.text() and self.group_es_max.text():
+            try:
+                min_group_es = float(self.group_es_min.text())
+                max_group_es = float(self.group_es_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["group_es_mm"] >= min_group_es) & 
+                    (filtered_df["group_es_mm"] <= max_group_es)
+                ]
+            except ValueError:
+                pass
+        
+        # Group ES (MOA) filter
+        if self.group_es_moa_min.text() and self.group_es_moa_max.text():
+            try:
+                min_group_es_moa = float(self.group_es_moa_min.text())
+                max_group_es_moa = float(self.group_es_moa_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["group_es_moa"] >= min_group_es_moa) & 
+                    (filtered_df["group_es_moa"] <= max_group_es_moa)
+                ]
+            except ValueError:
+                pass
+        
+        # Mean Radius filter
+        if self.mean_radius_min.text() and self.mean_radius_max.text():
+            try:
+                min_mean_radius = float(self.mean_radius_min.text())
+                max_mean_radius = float(self.mean_radius_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["mean_radius_mm"] >= min_mean_radius) & 
+                    (filtered_df["mean_radius_mm"] <= max_mean_radius)
+                ]
+            except ValueError:
+                pass
+        
+        # Group ES Width-X filter
+        if self.group_es_x_min.text() and self.group_es_x_max.text():
+            try:
+                min_group_es_x = float(self.group_es_x_min.text())
+                max_group_es_x = float(self.group_es_x_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["group_es_x_mm"] >= min_group_es_x) & 
+                    (filtered_df["group_es_x_mm"] <= max_group_es_x)
+                ]
+            except ValueError:
+                pass
+        
+        # Group ES Height-Y filter
+        if self.group_es_y_min.text() and self.group_es_y_max.text():
+            try:
+                min_group_es_y = float(self.group_es_y_min.text())
+                max_group_es_y = float(self.group_es_y_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["group_es_y_mm"] >= min_group_es_y) & 
+                    (filtered_df["group_es_y_mm"] <= max_group_es_y)
+                ]
+            except ValueError:
+                pass
+        
+        # POA Horizontal-X filter
+        if self.poi_x_min.text() and self.poi_x_max.text():
+            try:
+                min_poi_x = float(self.poi_x_min.text())
+                max_poi_x = float(self.poi_x_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["poi_x_mm"] >= min_poi_x) & 
+                    (filtered_df["poi_x_mm"] <= max_poi_x)
+                ]
+            except ValueError:
+                pass
+        
+        # POA Vertical-Y filter
+        if self.poi_y_min.text() and self.poi_y_max.text():
+            try:
+                min_poi_y = float(self.poi_y_min.text())
+                max_poi_y = float(self.poi_y_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["poi_y_mm"] >= min_poi_y) & 
+                    (filtered_df["poi_y_mm"] <= max_poi_y)
+                ]
+            except ValueError:
+                pass
+        
+        # Apply Results Velocity filters
+        
+        # Avg Velocity filter
+        if self.avg_velocity_min.text() and self.avg_velocity_max.text():
+            try:
+                min_avg_velocity = float(self.avg_velocity_min.text())
+                max_avg_velocity = float(self.avg_velocity_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["avg_velocity_fps"] >= min_avg_velocity) & 
+                    (filtered_df["avg_velocity_fps"] <= max_avg_velocity)
+                ]
+            except ValueError:
+                pass
+        
+        # SD Velocity filter
+        if self.sd_velocity_min.text() and self.sd_velocity_max.text():
+            try:
+                min_sd_velocity = float(self.sd_velocity_min.text())
+                max_sd_velocity = float(self.sd_velocity_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["sd_fps"] >= min_sd_velocity) & 
+                    (filtered_df["sd_fps"] <= max_sd_velocity)
+                ]
+            except ValueError:
+                pass
+        
+        # ES Velocity filter
+        if self.es_velocity_min.text() and self.es_velocity_max.text():
+            try:
+                min_es_velocity = float(self.es_velocity_min.text())
+                max_es_velocity = float(self.es_velocity_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["es_fps"] >= min_es_velocity) & 
+                    (filtered_df["es_fps"] <= max_es_velocity)
+                ]
+            except ValueError:
+                pass
+                
+        # For backward compatibility
+        if self.group_min.text() and self.group_max.text():
+            try:
+                min_group = float(self.group_min.text())
+                max_group = float(self.group_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["group_es_mm"] >= min_group) & 
+                    (filtered_df["group_es_mm"] <= max_group)
+                ]
+            except ValueError:
+                pass
+        
+        if self.velocity_min.text() and self.velocity_max.text():
+            try:
+                min_velocity = float(self.velocity_min.text())
+                max_velocity = float(self.velocity_max.text())
+                filtered_df = filtered_df[
+                    (filtered_df["avg_velocity_fps"] >= min_velocity) & 
+                    (filtered_df["avg_velocity_fps"] <= max_velocity)
+                ]
+            except ValueError:
+                pass
+        
+        # Update filtered data
+        self.filtered_data = filtered_df
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update result count
+        self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Update plots
+        self.update_plots()
+    
+    def reset_filters(self):
+        """Reset all filters to their default values"""
+        # Reset dropdowns
+        self.calibre_combo.setCurrentIndex(0)
+        self.rifle_combo.setCurrentIndex(0)
+        self.bullet_brand_combo.setCurrentIndex(0)
+        self.powder_brand_combo.setCurrentIndex(0)
+        
+        # Reset text inputs
+        self.date_from.clear()
+        self.date_to.clear()
+        self.charge_min.clear()
+        self.charge_max.clear()
+        
+        # Reset Results Target filters
+        self.shots_min.clear()
+        self.shots_max.clear()
+        self.group_es_min.clear()
+        self.group_es_max.clear()
+        self.group_es_moa_min.clear()
+        self.group_es_moa_max.clear()
+        self.mean_radius_min.clear()
+        self.mean_radius_max.clear()
+        self.group_es_x_min.clear()
+        self.group_es_x_max.clear()
+        self.group_es_y_min.clear()
+        self.group_es_y_max.clear()
+        self.poi_x_min.clear()
+        self.poi_x_max.clear()
+        self.poi_y_min.clear()
+        self.poi_y_max.clear()
+        
+        # Reset Results Velocity filters
+        self.avg_velocity_min.clear()
+        self.avg_velocity_max.clear()
+        self.sd_velocity_min.clear()
+        self.sd_velocity_max.clear()
+        self.es_velocity_min.clear()
+        self.es_velocity_max.clear()
+        
+        # For backward compatibility with existing code
+        self.group_min = self.group_es_min
+        self.group_max = self.group_es_max
+        self.velocity_min = self.avg_velocity_min
+        self.velocity_max = self.avg_velocity_max
+        
+        # Apply filters (which will now show all data)
+        self.apply_filters()
+    
+    def update_plots(self):
+        """Update all plots with the current filtered data"""
+        if len(self.filtered_data) < 2:
+            # Not enough data for meaningful plots
+            self.clear_plots()
+            return
+        
+        # Sort data by powder charge for plotting
+        plot_df = self.filtered_data.sort_values("powder_charge_gr")
+        
+        # Update accuracy plot
+        self.update_accuracy_plot(plot_df)
+        
+        # Update velocity plot
+        self.update_velocity_plot(plot_df)
+        
+        # Update combined plot
+        self.update_combined_plot(plot_df)
+    
+    def update_accuracy_plot(self, df):
+        """Update the accuracy plot with the given data"""
+        # Clear the plot
+        self.accuracy_canvas.axes.clear()
+        
+        # Create the plot
+        x = range(len(df))
+        
+        # Plot group size (MOA) on the left y-axis
+        color = 'tab:blue'
+        self.accuracy_canvas.axes.set_xlabel('Test')
+        self.accuracy_canvas.axes.set_ylabel('Group Size (MOA)', color=color)
+        self.accuracy_canvas.axes.plot(x, df['group_es_moa'], 'o-', color=color, label='Group Size (MOA)')
+        self.accuracy_canvas.axes.tick_params(axis='y', labelcolor=color)
+        
+        # Create a second y-axis for mean radius
+        ax2 = self.accuracy_canvas.axes.twinx()
+        color = 'tab:red'
+        ax2.set_ylabel('Mean Radius (mm)', color=color)
+        ax2.plot(x, df['mean_radius_mm'], 'o-', color=color, label='Mean Radius (mm)')
+        ax2.tick_params(axis='y', labelcolor=color)
+        
+        # Set x-axis labels
+        self.accuracy_canvas.axes.set_xticks(x)
+        self.accuracy_canvas.axes.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        
+        # Add a title
+        self.accuracy_canvas.axes.set_title('Group Size and Mean Radius vs. Powder Charge')
+        
+        # Add a legend
+        lines1, labels1 = self.accuracy_canvas.axes.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        self.accuracy_canvas.axes.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+        
+        # Adjust layout
+        self.accuracy_canvas.fig.tight_layout()
+        
+        # Redraw the canvas
+        self.accuracy_canvas.draw()
+    
+    def update_velocity_plot(self, df):
+        """Update the velocity plot with the given data"""
+        # Clear the plot
+        self.velocity_canvas.axes.clear()
+        
+        # Create the plot
+        x = range(len(df))
+        
+        # Plot average velocity on the left y-axis
+        color = 'tab:green'
+        self.velocity_canvas.axes.set_xlabel('Test')
+        self.velocity_canvas.axes.set_ylabel('Average Velocity (fps)', color=color)
+        self.velocity_canvas.axes.plot(x, df['avg_velocity_fps'], 'o-', color=color, label='Avg Velocity (fps)')
+        self.velocity_canvas.axes.tick_params(axis='y', labelcolor=color)
+        
+        # Create a second y-axis for ES and SD
+        ax2 = self.velocity_canvas.axes.twinx()
+        ax2.set_ylabel('Velocity Variation (fps)')
+        
+        # Plot ES and SD on the right y-axis with different colors
+        ax2.plot(x, df['es_fps'], 'o-', color='tab:orange', label='ES (fps)')
+        ax2.plot(x, df['sd_fps'], 'o-', color='tab:purple', label='SD (fps)')
+        
+        # Set x-axis labels
+        self.velocity_canvas.axes.set_xticks(x)
+        self.velocity_canvas.axes.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        
+        # Add a title
+        self.velocity_canvas.axes.set_title('Velocity Metrics vs. Powder Charge')
+        
+        # Add a legend
+        lines1, labels1 = self.velocity_canvas.axes.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        self.velocity_canvas.axes.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+        
+        # Adjust layout
+        self.velocity_canvas.fig.tight_layout()
+        
+        # Redraw the canvas
+        self.velocity_canvas.draw()
+    
+    def update_combined_plot(self, df):
+        """Update the combined plot with the given data"""
+        # Clear the plot
+        self.combined_canvas.axes.clear()
+        
+        # Create the plot
+        x = range(len(df))
+        
+        # Define colors for each metric
+        colors = {
+            'group_es_moa': 'tab:blue',
+            'mean_radius_mm': 'tab:red',
+            'avg_velocity_fps': 'tab:green',
+            'es_fps': 'tab:orange',
+            'sd_fps': 'tab:purple'
+        }
+        
+        # Create a figure with 2 subplots sharing the x-axis
+        # Top subplot for accuracy metrics
+        ax1 = self.combined_canvas.axes
+        ax1.set_xlabel('Test')
+        ax1.set_ylabel('Group Size (MOA)', color=colors['group_es_moa'])
+        ax1.plot(x, df['group_es_moa'], 'o-', color=colors['group_es_moa'], label='Group Size (MOA)')
+        ax1.tick_params(axis='y', labelcolor=colors['group_es_moa'])
+        
+        # Set x-axis labels
+        ax1.set_xticks(x)
+        ax1.set_xticklabels([f"{charge:.1f}gr" for charge in df['powder_charge_gr']], rotation=45)
+        
+        # Create a second y-axis for Mean Radius
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Mean Radius (mm)', color=colors['mean_radius_mm'])
+        ax2.plot(x, df['mean_radius_mm'], 'o-', color=colors['mean_radius_mm'], label='Mean Radius (mm)')
+        ax2.tick_params(axis='y', labelcolor=colors['mean_radius_mm'])
+        
+        # Create a third y-axis for Velocity
+        ax3 = ax1.twinx()
+        # Offset the third y-axis to the right
+        ax3.spines['right'].set_position(('outward', 60))
+        ax3.set_ylabel('Velocity (fps)', color=colors['avg_velocity_fps'])
+        ax3.plot(x, df['avg_velocity_fps'], 'o-', color=colors['avg_velocity_fps'], label='Avg Velocity (fps)')
+        ax3.tick_params(axis='y', labelcolor=colors['avg_velocity_fps'])
+        
+        # Create a fourth y-axis for ES and SD
+        ax4 = ax1.twinx()
+        # Offset the fourth y-axis to the right
+        ax4.spines['right'].set_position(('outward', 120))
+        ax4.set_ylabel('Velocity Variation (fps)')
+        ax4.plot(x, df['es_fps'], 'o-', color=colors['es_fps'], label='ES (fps)')
+        ax4.plot(x, df['sd_fps'], 'o-', color=colors['sd_fps'], label='SD (fps)')
+        
+        # Add a title
+        ax1.set_title('Accuracy and Velocity Metrics vs. Powder Charge')
+        
+        # Add a legend
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        lines3, labels3 = ax3.get_legend_handles_labels()
+        lines4, labels4 = ax4.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2 + lines3 + lines4, 
+                  labels1 + labels2 + labels3 + labels4, 
+                  loc='upper left')
+        
+        # Adjust layout
+        self.combined_canvas.fig.tight_layout()
+        
+        # Redraw the canvas
+        self.combined_canvas.draw()
+    
+    def clear_plots(self):
+        """Clear all plots"""
+        # Clear accuracy plot
+        self.accuracy_canvas.axes.clear()
+        self.accuracy_canvas.axes.set_title('Not enough data for visualization')
+        self.accuracy_canvas.draw()
+        
+        # Clear velocity plot
+        self.velocity_canvas.axes.clear()
+        self.velocity_canvas.axes.set_title('Not enough data for visualization')
+        self.velocity_canvas.draw()
+        
+        # Clear combined plot
+        self.combined_canvas.axes.clear()
+        self.combined_canvas.axes.set_title('Not enough data for visualization')
+        self.combined_canvas.draw()

@@ -1,0 +1,96 @@
+# Precision Rifle Load Development Changelog
+
+This document records all notable changes to the Precision Rifle Load Development application.
+
+## [Unreleased]
+
+### Added
+- Multiple database support allowing users to switch between different test databases
+- Settings dialog for managing database pointers
+- Google Drive integration for storing test data
+- Status bar showing the active database
+- Window title showing the active database
+- Automatic refresh of test lists when switching databases
+- Migration support for existing settings
+
+### Changed
+- Improved settings management with platform-specific storage locations
+- Enhanced data loader to support multiple database directories
+- Updated documentation with Google Drive setup instructions
+- Refactored code for better maintainability
+
+### Fixed
+- Issue with test list not refreshing after settings changes
+- Path handling on different operating systems
+
+## [1.2.0] - 2025-03-15
+
+### Added
+- Two-column layout in the View Test tab for better organization
+- Zoomable and pannable target images
+- Comprehensive environment data display
+- Separate Results Target and Results Velocity sections
+
+### Changed
+- Improved UI responsiveness
+- Enhanced data visualization in the Data Analysis tab
+- Updated component list management in the Admin tab
+
+### Fixed
+- Issue with large target images not displaying correctly
+- Bug in velocity data calculation
+- Form validation in the Create Test tab
+
+## [1.1.0] - 2025-02-01
+
+### Added
+- Data visualization with interactive charts
+- Search and filter functionality for existing tests
+- Component list management in the Admin tab
+- Form validation to ensure complete data entry
+
+### Changed
+- Improved test data storage format
+- Enhanced user interface with better layouts
+- Updated documentation
+
+### Fixed
+- Issue with test IDs containing special characters
+- Bug in date handling
+- Performance issues with large datasets
+
+## [1.0.0] - 2025-01-01
+
+### Added
+- Initial release of the Precision Rifle Load Development application
+- Create and manage test data for different rifle loads
+- Track platform details, ammunition components, and results
+- Generate unique test IDs based on load components
+- Basic data visualization
+- YAML-based data storage
+
+## Version Numbering
+
+The project follows [Semantic Versioning](https://semver.org/):
+
+- MAJOR version for incompatible API changes
+- MINOR version for added functionality in a backward-compatible manner
+- PATCH version for backward-compatible bug fixes
+
+## Release Process
+
+1. Update the version number in the code
+2. Update this changelog with the new version
+3. Create a release branch
+4. Create a pull request to merge the release branch into main
+5. After the pull request is approved and merged, create a tag
+6. Create a release on GitHub with release notes
+
+## Future Plans
+
+- Mobile companion app
+- Cloud synchronization beyond Google Drive
+- Advanced statistical analysis
+- PDF report generation
+- Barcode/QR code scanning for quick test lookup
+- Integration with chronographs and other measurement devices
