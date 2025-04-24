@@ -75,6 +75,11 @@ results_target:
   poa_shift_vertical: 0.5 # inches (positive is up)
   poa_shift_horizontal: -0.3 # inches (negative is left)
   target_image: "target1.jpg" # Filename of target image
+  shots: 5 # Number of shots in the group
+  group_es_x_mm: 33.05 # Extreme spread in X direction (mm)
+  group_es_y_mm: 24.63 # Extreme spread in Y direction (mm)
+  poi_x_mm: 2.6 # Point of impact X coordinate (mm)
+  poi_y_mm: 17.47 # Point of impact Y coordinate (mm)
   
 # Velocity Results
 results_velocity:

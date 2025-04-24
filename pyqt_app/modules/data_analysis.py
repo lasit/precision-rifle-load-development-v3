@@ -6,9 +6,10 @@ Provides visualization and analysis of test data
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
     QSlider, QPushButton, QTableView, QSplitter, QTabWidget,
-    QGroupBox, QFormLayout, QLineEdit, QCheckBox, QSizePolicy
+    QGroupBox, QFormLayout, QLineEdit, QCheckBox, QSizePolicy,
+    QDateEdit
 )
-from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal, QDate
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 
 import matplotlib
@@ -59,7 +60,8 @@ class TestDataModel(QAbstractTableModel):
             "bullet_brand", "bullet_model", "bullet_weight_gr", 
             "powder_brand", "powder_model", "powder_charge_gr",
             "group_es_mm", "group_es_moa", "mean_radius_mm",
-            "avg_velocity_fps", "sd_fps", "es_fps"
+            "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm",
+            "avg_velocity_fps", "sd_fps", "es_fps", "shots"
         ]
         
         # Ensure all columns exist in the dataframe
@@ -78,18 +80,23 @@ class TestDataModel(QAbstractTableModel):
             return None
         
         column_name = self._display_columns[index.column()]
-        value = self._data.iloc[index.row()][column_name]
         
-        # Format numeric values
-        if isinstance(value, (int, float)):
-            if column_name in ["group_es_mm", "group_es_moa", "mean_radius_mm"]:
-                return f"{value:.2f}"
-            elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
-                return f"{value:.1f}"
-            else:
-                return str(value)
-        
-        return str(value)
+        try:
+            value = self._data.iloc[index.row()][column_name]
+            
+            # Format numeric values
+            if isinstance(value, (int, float)):
+                if column_name in ["group_es_mm", "group_es_moa", "mean_radius_mm", "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm"]:
+                    return f"{value:.2f}"
+                elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
+                    return f"{value:.1f}"
+                else:
+                    return str(value)
+            
+            return str(value)
+        except (KeyError, ValueError) as e:
+            # If the column doesn't exist or there's an error, return an empty string
+            return ""
     
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
@@ -163,9 +170,17 @@ class DataAnalysisWidget(QWidget):
         test_info_group = QGroupBox("Test Info")
         test_info_layout = QFormLayout(test_info_group)
         
-        # Date range filter (placeholder)
-        self.date_from = QLineEdit()
-        self.date_to = QLineEdit()
+        # Date range filter with calendar popups
+        self.date_from = QDateEdit()
+        self.date_from.setCalendarPopup(True)
+        self.date_from.setDisplayFormat("yyyy-MM-dd")
+        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
+        
+        self.date_to = QDateEdit()
+        self.date_to.setCalendarPopup(True)
+        self.date_to.setDisplayFormat("yyyy-MM-dd")
+        self.date_to.setDate(QDate.currentDate())  # Default to today
+        
         date_layout = QHBoxLayout()
         date_layout.addWidget(self.date_from)
         date_layout.addWidget(QLabel("to"))
@@ -532,6 +547,26 @@ class DataAnalysisWidget(QWidget):
         """Apply filters to the data"""
         filtered_df = self.all_data.copy()
         
+        # Apply date range filter
+        try:
+            # Get dates from QDateEdit widgets
+            from_date = self.date_from.date().toString("yyyy-MM-dd")
+            to_date = self.date_to.date().toString("yyyy-MM-dd")
+            
+            # Check if the column exists in the dataframe
+            if "date" in filtered_df.columns:
+                # Handle NaN values by creating a mask that excludes them
+                mask = filtered_df["date"].notna()
+                mask = mask & (filtered_df["date"] >= from_date)
+                mask = mask & (filtered_df["date"] <= to_date)
+                
+                # Apply the mask to filter the dataframe
+                filtered_df = filtered_df[mask]
+            else:
+                print("Warning: 'date' column not found in the data")
+        except Exception as e:
+            print(f"Error applying date filter: {e}")
+        
         # Apply calibre filter
         if self.calibre_combo.currentText() != "All":
             filtered_df = filtered_df[filtered_df["calibre"] == self.calibre_combo.currentText()]
@@ -739,9 +774,9 @@ class DataAnalysisWidget(QWidget):
         self.bullet_brand_combo.setCurrentIndex(0)
         self.powder_brand_combo.setCurrentIndex(0)
         
-        # Reset text inputs
-        self.date_from.clear()
-        self.date_to.clear()
+        # Reset date inputs to default values
+        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
+        self.date_to.setDate(QDate.currentDate())  # Default to today
         self.charge_min.clear()
         self.charge_max.clear()
         

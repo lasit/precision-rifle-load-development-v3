@@ -144,7 +144,12 @@ def load_group_data(test_path):
         return {
             'group_es_mm': 0,
             'group_es_moa': 0,
+            'group_es_x_mm': 0,
+            'group_es_y_mm': 0,
             'mean_radius_mm': 0,
+            'poi_x_mm': 0,
+            'poi_y_mm': 0,
+            'shots': 0,
             'avg_velocity_fps': 0,
             'sd_fps': 0,
             'es_fps': 0
@@ -158,7 +163,12 @@ def load_group_data(test_path):
             return {
                 'group_es_mm': 0,
                 'group_es_moa': 0,
+                'group_es_x_mm': 0,
+                'group_es_y_mm': 0,
                 'mean_radius_mm': 0,
+                'poi_x_mm': 0,
+                'poi_y_mm': 0,
+                'shots': 0,
                 'avg_velocity_fps': 0,
                 'sd_fps': 0,
                 'es_fps': 0
@@ -173,7 +183,12 @@ def load_group_data(test_path):
         return {
             'group_es_mm': group_data.get('group_es_mm', 0),
             'group_es_moa': group_data.get('group_es_moa', 0),
+            'group_es_x_mm': group_data.get('group_es_x_mm', 0),
+            'group_es_y_mm': group_data.get('group_es_y_mm', 0),
             'mean_radius_mm': group_data.get('mean_radius_mm', 0),
+            'poi_x_mm': group_data.get('poi_x_mm', 0),
+            'poi_y_mm': group_data.get('poi_y_mm', 0),
+            'shots': group_data.get('shots', 0),
             'avg_velocity_fps': chrono_data.get('avg_velocity_fps', 0),
             'sd_fps': chrono_data.get('sd_fps', 0),
             'es_fps': chrono_data.get('es_fps', 0)
@@ -182,7 +197,12 @@ def load_group_data(test_path):
         return {
             'group_es_mm': 0,
             'group_es_moa': 0,
+            'group_es_x_mm': 0,
+            'group_es_y_mm': 0,
             'mean_radius_mm': 0,
+            'poi_x_mm': 0,
+            'poi_y_mm': 0,
+            'shots': 0,
             'avg_velocity_fps': 0,
             'sd_fps': 0,
             'es_fps': 0

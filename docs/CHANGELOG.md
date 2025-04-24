@@ -16,6 +16,8 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Improved application startup with automatic cleanup of previous instances
 - Two-column layout in the View Test tab for better organization
 - Zoomable and pannable target images
+- Calendar widget for date filtering in the Data Analysis tab
+- Additional columns in the Data Analysis tab (Group ES Width-X, Group ES Height-Y, POA Horizontal-X, POA Vertical-Y, Number of shots)
 
 ### Changed
 - Improved settings management with platform-specific storage locations

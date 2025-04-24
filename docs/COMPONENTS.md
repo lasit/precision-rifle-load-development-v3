@@ -51,18 +51,24 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 
 The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools for analyzing and visualizing test data. It:
 
-- Displays test data in a table
-- Provides filtering options for test data
-- Generates charts and visualizations
-- Allows exporting of analysis results
+- Displays test data in a table with comprehensive columns
+- Provides filtering options for test data with calendar widgets for date selection
+- Generates charts and visualizations for accuracy and velocity metrics
+- Allows filtering by various parameters including group size, velocity, and shot count
+- Handles missing data gracefully with robust error handling
+
+### Key Classes
+
+- `TestDataModel`: Custom table model for displaying test data
+- `MatplotlibCanvas`: Custom canvas for embedding Matplotlib plots in PyQt
 
 ### Key Methods
 
 - `__init__()`: Initializes the widget and sets up the UI
-- `setup_ui()`: Sets up the UI components
-- `load_tests()`: Loads all tests from the active database
-- `filter_tests()`: Filters tests based on user criteria
-- `generate_charts()`: Generates charts and visualizations
+- `setup_ui()`: Sets up the UI components with filter groups and visualization tabs
+- `load_data()`: Loads all tests from the active database
+- `apply_filters()`: Filters tests based on user criteria with robust error handling
+- `update_plots()`: Updates the accuracy, velocity, and combined plots
 - `refresh()`: Refreshes the test data
 
 ## Create Test Module
