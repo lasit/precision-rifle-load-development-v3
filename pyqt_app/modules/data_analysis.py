@@ -588,12 +588,22 @@ class DataAnalysisWidget(QWidget):
             try:
                 min_charge = float(self.charge_min.text())
                 max_charge = float(self.charge_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["powder_charge_gr"] >= min_charge) & 
-                    (filtered_df["powder_charge_gr"] <= max_charge)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "powder_charge_gr" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["powder_charge_gr"].notna()
+                    mask = mask & (filtered_df["powder_charge_gr"] >= min_charge)
+                    mask = mask & (filtered_df["powder_charge_gr"] <= max_charge)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'powder_charge_gr' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Charge filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Charge filter: {e}")
         
         # Apply Results Target filters
         
@@ -602,36 +612,66 @@ class DataAnalysisWidget(QWidget):
             try:
                 min_shots = int(self.shots_min.text())
                 max_shots = int(self.shots_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["shots"] >= min_shots) & 
-                    (filtered_df["shots"] <= max_shots)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "shots" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["shots"].notna()
+                    mask = mask & (filtered_df["shots"] >= min_shots)
+                    mask = mask & (filtered_df["shots"] <= max_shots)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'shots' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Number of shots filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Number of shots filter: {e}")
         
         # Group ES (mm) filter
         if self.group_es_min.text() and self.group_es_max.text():
             try:
                 min_group_es = float(self.group_es_min.text())
                 max_group_es = float(self.group_es_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["group_es_mm"] >= min_group_es) & 
-                    (filtered_df["group_es_mm"] <= max_group_es)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "group_es_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_mm"].notna()
+                    mask = mask & (filtered_df["group_es_mm"] >= min_group_es)
+                    mask = mask & (filtered_df["group_es_mm"] <= max_group_es)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES (mm) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES (mm) filter: {e}")
         
         # Group ES (MOA) filter
         if self.group_es_moa_min.text() and self.group_es_moa_max.text():
             try:
                 min_group_es_moa = float(self.group_es_moa_min.text())
                 max_group_es_moa = float(self.group_es_moa_max.text())
-                filtered_df = filtered_df[
-                    (filtered_df["group_es_moa"] >= min_group_es_moa) & 
-                    (filtered_df["group_es_moa"] <= max_group_es_moa)
-                ]
-            except ValueError:
-                pass
+                
+                # Check if the column exists in the dataframe
+                if "group_es_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_moa"].notna()
+                    mask = mask & (filtered_df["group_es_moa"] >= min_group_es_moa)
+                    mask = mask & (filtered_df["group_es_moa"] <= max_group_es_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES (MOA) filter: {e}")
         
         # Mean Radius filter
         if self.mean_radius_min.text() and self.mean_radius_max.text():
@@ -732,7 +772,7 @@ class DataAnalysisWidget(QWidget):
                 pass
                 
         # For backward compatibility
-        if self.group_min.text() and self.group_max.text():
+        if self.group_min is not None and self.group_max is not None and self.group_min.text() and self.group_max.text():
             try:
                 min_group = float(self.group_min.text())
                 max_group = float(self.group_max.text())
@@ -743,7 +783,7 @@ class DataAnalysisWidget(QWidget):
             except ValueError:
                 pass
         
-        if self.velocity_min.text() and self.velocity_max.text():
+        if self.velocity_min is not None and self.velocity_max is not None and self.velocity_min.text() and self.velocity_max.text():
             try:
                 min_velocity = float(self.velocity_min.text())
                 max_velocity = float(self.velocity_max.text())

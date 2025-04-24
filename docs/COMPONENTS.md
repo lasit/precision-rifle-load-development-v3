@@ -55,7 +55,10 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 - Provides filtering options for test data with calendar widgets for date selection
 - Generates charts and visualizations for accuracy and velocity metrics
 - Allows filtering by various parameters including group size, velocity, and shot count
-- Handles missing data gracefully with robust error handling
+- Handles missing data gracefully with comprehensive error handling
+- Validates column existence before filtering
+- Handles NaN values in filter operations
+- Provides detailed error messages for troubleshooting
 
 ### Key Classes
 

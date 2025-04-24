@@ -30,6 +30,8 @@ This document records all notable changes to the Precision Rifle Load Developmen
 ### Fixed
 - Issue with test list not refreshing after settings changes
 - Path handling on different operating systems
+- Improved error handling in Data Analysis module filters
+- Fixed NoneType errors in filter application
 
 ## [1.2.0] - 2025-03-15
 
