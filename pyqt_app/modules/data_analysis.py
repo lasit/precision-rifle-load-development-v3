@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
     QSlider, QPushButton, QTableView, QSplitter, QTabWidget,
     QGroupBox, QFormLayout, QLineEdit, QCheckBox, QSizePolicy,
-    QDateEdit
+    QDateEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal, QDate
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
@@ -33,7 +33,7 @@ from utils.settings_manager import SettingsManager
 class MatplotlibCanvas(FigureCanvas):
     """Matplotlib canvas for embedding plots in PyQt"""
     
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, parent=None, width=15, height=12, dpi=100):  # Tripled width and height
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
         
@@ -140,7 +140,7 @@ class TestDataModel(QAbstractTableModel):
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
         
-        # Make the checkbox column editable
+        # Make the checkbox column editable and user-checkable
         if index.column() == 0:
             return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsUserCheckable
         
@@ -152,12 +152,21 @@ class TestDataModel(QAbstractTableModel):
             return False
         
         # Handle checkbox state changes
-        if index.column() == 0 and role == Qt.ItemDataRole.CheckStateRole:
+        if index.column() == 0:
             row = index.row()
             
             # Update the selected state in the dataframe
             try:
-                self._data.iloc[row, self._data.columns.get_loc('selected')] = (value == Qt.CheckState.Checked)
+                # Always toggle the current state when clicked
+                current_state = self._data.iloc[row]['selected']
+                new_state = not current_state
+                
+                # Update the dataframe
+                self._data.iloc[row, self._data.columns.get_loc('selected')] = new_state
+                print(f"Toggling row {row} selection from {current_state} to {new_state}")
+                
+                # Emit dataChanged signal to update the view
+                self.dataChanged.emit(index, index, [Qt.ItemDataRole.CheckStateRole])
                 
                 # Emit the selectionChanged signal
                 self.selectionChanged.emit()
@@ -476,6 +485,12 @@ class DataAnalysisWidget(QWidget):
         splitter.addWidget(table_widget)
         
         # Bottom section: Visualization tabs
+        # Create a scroll area for the visualization section
+        viz_scroll_area = QScrollArea()
+        viz_scroll_area.setWidgetResizable(True)
+        viz_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        viz_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
         viz_widget = QWidget()
         viz_layout = QVBoxLayout(viz_widget)
         
@@ -528,7 +543,12 @@ class DataAnalysisWidget(QWidget):
         
         viz_layout.addWidget(viz_tabs)
         
-        splitter.addWidget(viz_widget)
+        # Set the visualization widget as the content of the scroll area
+        viz_widget.setLayout(viz_layout)
+        viz_scroll_area.setWidget(viz_widget)
+        
+        # Add the scroll area to the splitter
+        splitter.addWidget(viz_scroll_area)
         
         # Set initial splitter sizes
         splitter.setSizes([200, 300, 400])
@@ -709,6 +729,10 @@ class DataAnalysisWidget(QWidget):
                 
                 # Check if the column exists in the dataframe
                 if "shots" in filtered_df.columns:
+                    # Make a copy of the 'selected' column before filtering
+                    if 'selected' in filtered_df.columns:
+                        selection_state = filtered_df['selected'].copy()
+                    
                     # Handle NaN values by creating a mask that excludes them
                     mask = filtered_df["shots"].notna()
                     mask = mask & (filtered_df["shots"] >= min_shots)
@@ -716,12 +740,22 @@ class DataAnalysisWidget(QWidget):
                     
                     # Apply the mask to filter the dataframe
                     filtered_df = filtered_df[mask]
+                    
+                    # Restore the selection state for the remaining rows
+                    if 'selected' in filtered_df.columns and len(selection_state) > 0:
+                        # Create a mapping from index to selection state
+                        selection_map = dict(zip(selection_state.index, selection_state))
+                        
+                        # Apply the selection state to the filtered dataframe
+                        filtered_df['selected'] = filtered_df.index.map(lambda x: selection_map.get(x, True))
                 else:
                     print("Warning: 'shots' column not found in the data")
             except ValueError as e:
                 print(f"Error converting Number of shots filter values: {e}")
             except Exception as e:
                 print(f"Error applying Number of shots filter: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Group ES (mm) filter
         if self.group_es_min.text() and self.group_es_max.text():
@@ -731,6 +765,10 @@ class DataAnalysisWidget(QWidget):
                 
                 # Check if the column exists in the dataframe
                 if "group_es_mm" in filtered_df.columns:
+                    # Make a copy of the 'selected' column before filtering
+                    if 'selected' in filtered_df.columns:
+                        selection_state = filtered_df['selected'].copy()
+                    
                     # Handle NaN values by creating a mask that excludes them
                     mask = filtered_df["group_es_mm"].notna()
                     mask = mask & (filtered_df["group_es_mm"] >= min_group_es)
@@ -738,12 +776,22 @@ class DataAnalysisWidget(QWidget):
                     
                     # Apply the mask to filter the dataframe
                     filtered_df = filtered_df[mask]
+                    
+                    # Restore the selection state for the remaining rows
+                    if 'selected' in filtered_df.columns and len(selection_state) > 0:
+                        # Create a mapping from index to selection state
+                        selection_map = dict(zip(selection_state.index, selection_state))
+                        
+                        # Apply the selection state to the filtered dataframe
+                        filtered_df['selected'] = filtered_df.index.map(lambda x: selection_map.get(x, True))
                 else:
                     print("Warning: 'group_es_mm' column not found in the data")
             except ValueError as e:
                 print(f"Error converting Group ES (mm) filter values: {e}")
             except Exception as e:
                 print(f"Error applying Group ES (mm) filter: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Group ES (MOA) filter
         if self.group_es_moa_min.text() and self.group_es_moa_max.text():
@@ -970,6 +1018,10 @@ class DataAnalysisWidget(QWidget):
         
         # Update filtered data
         self.filtered_data = filtered_df
+        
+        # Ensure the 'selected' column exists
+        if 'selected' not in self.filtered_data.columns:
+            self.filtered_data['selected'] = True
         
         # Update the table model
         self.test_model.update_data(self.filtered_data)

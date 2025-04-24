@@ -30,7 +30,8 @@ class MainWindow(QMainWindow):
         
         # Set window properties
         self.update_window_title()
-        self.setMinimumSize(1200, 800)
+        self.setMinimumSize(1560, 1040)  # Increased by 30%
+        self.resize(1560, 1040)  # Set initial size
         
         # Ensure menu bar is visible on all platforms
         self.menuBar().setNativeMenuBar(False)
@@ -197,7 +198,7 @@ def main():
     
     # Create and show the main window
     window = MainWindow()
-    window.show()
+    window.showMaximized()  # Show maximized instead of normal
     
     # Start the event loop
     sys.exit(app.exec())
