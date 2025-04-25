@@ -62,12 +62,14 @@ class TestDataModel(QAbstractTableModel):
             "test_id", "date", "distance_m", 
             
             # Platform
-            "calibre", "rifle", 
+            "calibre", "rifle", "barrel_length_in", "twist_rate",
             
             # Components
-            "bullet_brand", "bullet_model", "bullet_weight_gr", 
-            "powder_brand", "powder_model", "powder_charge_gr",
-            "coal_in", "b2o_in", "primer",
+            "bullet_brand", "bullet_model", "bullet_weight_gr", "bullet_lot",
+            "powder_brand", "powder_model", "powder_charge_gr", "powder_lot",
+            "coal_in", "b2o_in", 
+            "case_brand", "case_lot", "neck_turned", "brass_sizing", "bushing_size", "shoulder_bump",
+            "primer_brand", "primer_model", "primer_lot",
             
             # Results
             "group_es_mm", "group_es_moa", "mean_radius_mm",

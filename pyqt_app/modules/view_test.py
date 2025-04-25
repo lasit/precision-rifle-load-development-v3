@@ -13,7 +13,7 @@ import yaml
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                              QPushButton, QFormLayout, QLineEdit, QGroupBox, QScrollArea,
                              QMessageBox, QStyle, QDoubleSpinBox, QDateEdit, QTextEdit,
-                             QSlider, QToolBar, QSizePolicy)
+                             QSlider, QToolBar, QSizePolicy, QTabWidget)
 from PyQt6.QtCore import Qt, pyqtSignal, QDate, QPoint, QRect, QSize, QRectF
 from PyQt6.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent, QTransform, QCursor
 
@@ -462,91 +462,173 @@ class ViewTestWidget(QWidget):
             self.rifle_combo.addItems(rifle_list)
         layout.addRow("Rifle:", self.rifle_combo)
         
+        # Barrel length (numeric input)
+        self.barrel_length_spin = QDoubleSpinBox()
+        self.barrel_length_spin.setRange(0, 99.9)
+        self.barrel_length_spin.setDecimals(1)
+        self.barrel_length_spin.setSingleStep(0.5)
+        layout.addRow("Barrel Length (in):", self.barrel_length_spin)
+        
+        # Twist rate (text input)
+        self.twist_rate_edit = QLineEdit()
+        self.twist_rate_edit.setPlaceholderText("e.g., 1:8 or 1:10")
+        layout.addRow("Twist Rate:", self.twist_rate_edit)
+        
         return group
 
     def _create_ammunition_group(self):
         group = QGroupBox("Ammunition")
         layout = QFormLayout(group)
         
-        # Bullet section
-        # Bullet Brand (dropdown)
-        self.bullet_brand_combo = QComboBox()
-        bullet_brand_list = self.component_lists.get('bullet_brand', [])
-        if bullet_brand_list:
-            self.bullet_brand_combo.addItems(bullet_brand_list)
-        layout.addRow("Bullet Brand:", self.bullet_brand_combo)
+        # Create a tabbed layout for better organization
+        ammo_tabs = QTabWidget()
         
-        # Bullet Model (dropdown)
-        self.bullet_model_combo = QComboBox()
-        bullet_model_list = self.component_lists.get('bullet_model', [])
-        if bullet_model_list:
-            self.bullet_model_combo.addItems(bullet_model_list)
-        layout.addRow("Bullet Model:", self.bullet_model_combo)
-        
-        # Bullet Weight (numeric input)
-        self.bullet_weight_spin = QDoubleSpinBox()
-        self.bullet_weight_spin.setRange(0.01, 999.99)
-        self.bullet_weight_spin.setDecimals(2)
-        self.bullet_weight_spin.setSingleStep(0.1)
-        layout.addRow("Bullet Weight (gr):", self.bullet_weight_spin)
-        
-        # Powder section
-        # Powder Brand (dropdown)
-        self.powder_brand_combo = QComboBox()
-        powder_brand_list = self.component_lists.get('powder_brand', [])
-        if powder_brand_list:
-            self.powder_brand_combo.addItems(powder_brand_list)
-        layout.addRow("Powder Brand:", self.powder_brand_combo)
-        
-        # Powder Model (dropdown)
-        self.powder_model_combo = QComboBox()
-        powder_model_list = self.component_lists.get('powder_model', [])
-        if powder_model_list:
-            self.powder_model_combo.addItems(powder_model_list)
-        layout.addRow("Powder Model:", self.powder_model_combo)
-        
-        # Powder Charge (numeric input)
-        self.powder_charge_spin = QDoubleSpinBox()
-        self.powder_charge_spin.setRange(0.01, 999.99)
-        self.powder_charge_spin.setDecimals(2)
-        self.powder_charge_spin.setSingleStep(0.1)
-        layout.addRow("Powder Charge (gr):", self.powder_charge_spin)
-        
-        # Cartridge section
-        # Cartridge OAL (numeric input)
-        self.cartridge_oal_spin = QDoubleSpinBox()
-        self.cartridge_oal_spin.setRange(0.001, 9.999)
-        self.cartridge_oal_spin.setDecimals(3)
-        self.cartridge_oal_spin.setSingleStep(0.001)
-        layout.addRow("Cartridge OAL (in):", self.cartridge_oal_spin)
-        
-        # Cartridge BTO (numeric input)
-        self.cartridge_bto_spin = QDoubleSpinBox()
-        self.cartridge_bto_spin.setRange(0.001, 9.999)
-        self.cartridge_bto_spin.setDecimals(3)
-        self.cartridge_bto_spin.setSingleStep(0.001)
-        layout.addRow("Cartridge BTO (in):", self.cartridge_bto_spin)
+        # Case Tab
+        case_tab = QWidget()
+        case_layout = QFormLayout(case_tab)
         
         # Case Brand (dropdown)
         self.case_brand_combo = QComboBox()
         case_brand_list = self.component_lists.get('case_brand', [])
         if case_brand_list:
             self.case_brand_combo.addItems(case_brand_list)
-        layout.addRow("Case Brand:", self.case_brand_combo)
+        case_layout.addRow("Case Brand:", self.case_brand_combo)
+        
+        # Case Lot (text input)
+        self.case_lot_edit = QLineEdit()
+        case_layout.addRow("Case Lot:", self.case_lot_edit)
+        
+        # Neck Turned (dropdown)
+        self.neck_turned_combo = QComboBox()
+        self.neck_turned_combo.addItems(["No", "Yes"])
+        case_layout.addRow("Neck Turned:", self.neck_turned_combo)
+        
+        # Brass Sizing (dropdown)
+        self.brass_sizing_combo = QComboBox()
+        self.brass_sizing_combo.addItems(["Full", "Partial"])
+        case_layout.addRow("Brass Sizing:", self.brass_sizing_combo)
+        
+        # Bushing Size (numeric input)
+        self.bushing_size_spin = QDoubleSpinBox()
+        self.bushing_size_spin.setRange(0.001, 9.999)
+        self.bushing_size_spin.setDecimals(3)
+        self.bushing_size_spin.setSingleStep(0.001)
+        case_layout.addRow("Bushing Size:", self.bushing_size_spin)
+        
+        # Shoulder Bump (numeric input)
+        self.shoulder_bump_spin = QDoubleSpinBox()
+        self.shoulder_bump_spin.setRange(0.0, 9.9)
+        self.shoulder_bump_spin.setDecimals(1)
+        self.shoulder_bump_spin.setSingleStep(0.1)
+        case_layout.addRow("Shoulder Bump (thou):", self.shoulder_bump_spin)
+        
+        # Bullet Tab
+        bullet_tab = QWidget()
+        bullet_layout = QFormLayout(bullet_tab)
+        
+        # Bullet Brand (dropdown)
+        self.bullet_brand_combo = QComboBox()
+        bullet_brand_list = self.component_lists.get('bullet_brand', [])
+        if bullet_brand_list:
+            self.bullet_brand_combo.addItems(bullet_brand_list)
+        bullet_layout.addRow("Bullet Brand:", self.bullet_brand_combo)
+        
+        # Bullet Model (dropdown)
+        self.bullet_model_combo = QComboBox()
+        bullet_model_list = self.component_lists.get('bullet_model', [])
+        if bullet_model_list:
+            self.bullet_model_combo.addItems(bullet_model_list)
+        bullet_layout.addRow("Bullet Model:", self.bullet_model_combo)
+        
+        # Bullet Weight (numeric input)
+        self.bullet_weight_spin = QDoubleSpinBox()
+        self.bullet_weight_spin.setRange(0.01, 999.99)
+        self.bullet_weight_spin.setDecimals(2)
+        self.bullet_weight_spin.setSingleStep(0.1)
+        bullet_layout.addRow("Bullet Weight (gr):", self.bullet_weight_spin)
+        
+        # Bullet Lot (text input)
+        self.bullet_lot_edit = QLineEdit()
+        bullet_layout.addRow("Bullet Lot:", self.bullet_lot_edit)
+        
+        # Powder Tab
+        powder_tab = QWidget()
+        powder_layout = QFormLayout(powder_tab)
+        
+        # Powder Brand (dropdown)
+        self.powder_brand_combo = QComboBox()
+        powder_brand_list = self.component_lists.get('powder_brand', [])
+        if powder_brand_list:
+            self.powder_brand_combo.addItems(powder_brand_list)
+        powder_layout.addRow("Powder Brand:", self.powder_brand_combo)
+        
+        # Powder Model (dropdown)
+        self.powder_model_combo = QComboBox()
+        powder_model_list = self.component_lists.get('powder_model', [])
+        if powder_model_list:
+            self.powder_model_combo.addItems(powder_model_list)
+        powder_layout.addRow("Powder Model:", self.powder_model_combo)
+        
+        # Powder Charge (numeric input)
+        self.powder_charge_spin = QDoubleSpinBox()
+        self.powder_charge_spin.setRange(0.01, 999.99)
+        self.powder_charge_spin.setDecimals(2)
+        self.powder_charge_spin.setSingleStep(0.1)
+        powder_layout.addRow("Powder Charge (gr):", self.powder_charge_spin)
+        
+        # Powder Lot (text input)
+        self.powder_lot_edit = QLineEdit()
+        powder_layout.addRow("Powder Lot:", self.powder_lot_edit)
+        
+        # Cartridge Tab
+        cartridge_tab = QWidget()
+        cartridge_layout = QFormLayout(cartridge_tab)
+        
+        # Cartridge OAL (numeric input)
+        self.cartridge_oal_spin = QDoubleSpinBox()
+        self.cartridge_oal_spin.setRange(0.001, 9.999)
+        self.cartridge_oal_spin.setDecimals(3)
+        self.cartridge_oal_spin.setSingleStep(0.001)
+        cartridge_layout.addRow("Cartridge OAL (in):", self.cartridge_oal_spin)
+        
+        # Cartridge BTO (numeric input)
+        self.cartridge_bto_spin = QDoubleSpinBox()
+        self.cartridge_bto_spin.setRange(0.001, 9.999)
+        self.cartridge_bto_spin.setDecimals(3)
+        self.cartridge_bto_spin.setSingleStep(0.001)
+        cartridge_layout.addRow("Cartridge BTO (in):", self.cartridge_bto_spin)
+        
+        # Primer Tab
+        primer_tab = QWidget()
+        primer_layout = QFormLayout(primer_tab)
         
         # Primer Brand (dropdown)
         self.primer_brand_combo = QComboBox()
         primer_brand_list = self.component_lists.get('primer_brand', [])
         if primer_brand_list:
             self.primer_brand_combo.addItems(primer_brand_list)
-        layout.addRow("Primer Brand:", self.primer_brand_combo)
+        primer_layout.addRow("Primer Brand:", self.primer_brand_combo)
         
         # Primer Model (dropdown)
         self.primer_model_combo = QComboBox()
         primer_model_list = self.component_lists.get('primer_model', [])
         if primer_model_list:
             self.primer_model_combo.addItems(primer_model_list)
-        layout.addRow("Primer Model:", self.primer_model_combo)
+        primer_layout.addRow("Primer Model:", self.primer_model_combo)
+        
+        # Primer Lot (text input)
+        self.primer_lot_edit = QLineEdit()
+        primer_layout.addRow("Primer Lot:", self.primer_lot_edit)
+        
+        # Add tabs to the tab widget
+        ammo_tabs.addTab(case_tab, "Case")
+        ammo_tabs.addTab(bullet_tab, "Bullet")
+        ammo_tabs.addTab(powder_tab, "Powder")
+        ammo_tabs.addTab(cartridge_tab, "Cartridge")
+        ammo_tabs.addTab(primer_tab, "Primer")
+        
+        # Add the tab widget to the main layout
+        layout.addRow(ammo_tabs)
         
         return group
 
@@ -712,9 +794,64 @@ class ViewTestWidget(QWidget):
             # If not found in the list but has a value, add it
             self.rifle_combo.addItem(rifle)
             self.rifle_combo.setCurrentText(rifle)
+        
+        # Set barrel length in spinner
+        barrel_length = platform_data.get('barrel_length_in')
+        if barrel_length is not None:
+            try:
+                self.barrel_length_spin.setValue(float(barrel_length))
+            except (ValueError, TypeError):
+                pass
+        
+        # Set twist rate in text field
+        self.twist_rate_edit.setText(str(platform_data.get('twist_rate', '')))
 
-        # Ammunition - Bullet
+        # Ammunition - Case
         ammo_data = data.get('ammo', {}) # Access nested ammo data
+        case_data = ammo_data.get('case', {})
+        
+        # Set case brand in dropdown
+        case_brand = str(case_data.get('brand', ''))
+        index = self.case_brand_combo.findText(case_brand)
+        if index >= 0:
+            self.case_brand_combo.setCurrentIndex(index)
+        elif case_brand:
+            # If not found in the list but has a value, add it
+            self.case_brand_combo.addItem(case_brand)
+            self.case_brand_combo.setCurrentText(case_brand)
+        
+        # Set case lot
+        self.case_lot_edit.setText(str(case_data.get('lot', '')))
+        
+        # Set neck turned
+        neck_turned = str(case_data.get('neck_turned', 'No'))
+        index = self.neck_turned_combo.findText(neck_turned)
+        if index >= 0:
+            self.neck_turned_combo.setCurrentIndex(index)
+        
+        # Set brass sizing
+        brass_sizing = str(case_data.get('brass_sizing', 'Full'))
+        index = self.brass_sizing_combo.findText(brass_sizing)
+        if index >= 0:
+            self.brass_sizing_combo.setCurrentIndex(index)
+        
+        # Set bushing size
+        bushing_size = case_data.get('bushing_size')
+        if bushing_size is not None:
+            try:
+                self.bushing_size_spin.setValue(float(bushing_size))
+            except (ValueError, TypeError):
+                pass
+        
+        # Set shoulder bump
+        shoulder_bump = case_data.get('shoulder_bump')
+        if shoulder_bump is not None:
+            try:
+                self.shoulder_bump_spin.setValue(float(shoulder_bump))
+            except (ValueError, TypeError):
+                pass
+        
+        # Ammunition - Bullet
         bullet_data = ammo_data.get('bullet', {})
         
         # Set bullet brand in dropdown
@@ -744,6 +881,9 @@ class ViewTestWidget(QWidget):
                 self.bullet_weight_spin.setValue(float(bullet_weight))
             except (ValueError, TypeError):
                 pass
+        
+        # Set bullet lot
+        self.bullet_lot_edit.setText(str(bullet_data.get('lot', '')))
 
         # Ammunition - Powder
         powder_data = ammo_data.get('powder', {})
@@ -1039,6 +1179,8 @@ class ViewTestWidget(QWidget):
         platform_data = {}
         platform_data['calibre'] = self.calibre_combo.currentText() or None
         platform_data['rifle'] = self.rifle_combo.currentText() or None
+        platform_data['barrel_length_in'] = self.barrel_length_spin.value() if self.barrel_length_spin.value() > 0 else None
+        platform_data['twist_rate'] = self.twist_rate_edit.text() or None
         if any(platform_data.values()): updated_data['platform'] = platform_data
 
         # --- Ammunition (Main Key) ---
@@ -1049,6 +1191,7 @@ class ViewTestWidget(QWidget):
         bullet_data['brand'] = self.bullet_brand_combo.currentText() or None
         bullet_data['model'] = self.bullet_model_combo.currentText() or None
         bullet_data['weight_gr'] = self.bullet_weight_spin.value() if self.bullet_weight_spin.value() > 0 else None
+        bullet_data['lot'] = self.bullet_lot_edit.text() or None
         if any(bullet_data.values()): ammo_data['bullet'] = bullet_data
 
         # Ammunition - Powder
@@ -1056,6 +1199,7 @@ class ViewTestWidget(QWidget):
         powder_data['brand'] = self.powder_brand_combo.currentText() or None
         powder_data['model'] = self.powder_model_combo.currentText() or None
         powder_data['charge_gr'] = self.powder_charge_spin.value() if self.powder_charge_spin.value() > 0 else None
+        powder_data['lot'] = self.powder_lot_edit.text() or None
         if any(powder_data.values()): ammo_data['powder'] = powder_data
 
         # Ammunition - Cartridge/Case/Primer
@@ -1066,12 +1210,17 @@ class ViewTestWidget(QWidget):
         
         case_data = {}
         case_data['brand'] = self.case_brand_combo.currentText() or None
-        # Add other case fields if they exist in UI
+        case_data['lot'] = self.case_lot_edit.text() or None
+        case_data['neck_turned'] = self.neck_turned_combo.currentText() or None
+        case_data['brass_sizing'] = self.brass_sizing_combo.currentText() or None
+        case_data['bushing_size'] = self.bushing_size_spin.value() if self.bushing_size_spin.value() > 0 else None
+        case_data['shoulder_bump'] = self.shoulder_bump_spin.value() if self.shoulder_bump_spin.value() > 0 else None
         if any(case_data.values()): ammo_data['case'] = case_data
         
         primer_data = {}
         primer_data['brand'] = self.primer_brand_combo.currentText() or None
         primer_data['model'] = self.primer_model_combo.currentText() or None
+        primer_data['lot'] = self.primer_lot_edit.text() or None
         if any(primer_data.values()): ammo_data['primer'] = primer_data
         
         # Add ammo_data to updated_data if it's not empty

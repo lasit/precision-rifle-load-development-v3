@@ -158,7 +158,20 @@ def load_group_data(test_path):
             'pressure_hpa': 0,
             'wind_speed_ms': 0,
             'wind_direction': '',
-            'light_conditions': ''
+            'light_conditions': '',
+            'barrel_length_in': 0,
+            'twist_rate': '',
+            'bullet_lot': '',
+            'powder_lot': '',
+            'case_brand': '',
+            'case_lot': '',
+            'neck_turned': '',
+            'brass_sizing': '',
+            'bushing_size': 0,
+            'shoulder_bump': 0,
+            'primer_brand': '',
+            'primer_model': '',
+            'primer_lot': ''
         }
     
     try:
@@ -183,7 +196,20 @@ def load_group_data(test_path):
                 'pressure_hpa': 0,
                 'wind_speed_ms': 0,
                 'wind_direction': '',
-                'light_conditions': ''
+                'light_conditions': '',
+                'barrel_length_in': 0,
+                'twist_rate': '',
+                'bullet_lot': '',
+                'powder_lot': '',
+                'case_brand': '',
+                'case_lot': '',
+                'neck_turned': '',
+                'brass_sizing': '',
+                'bushing_size': 0,
+                'shoulder_bump': 0,
+                'primer_brand': '',
+                'primer_model': '',
+                'primer_lot': ''
             }
         
         # Extract relevant group data from the nested structure
@@ -194,6 +220,16 @@ def load_group_data(test_path):
         
         # Extract environment data if available
         environment_data = yaml_data.get('environment', {})
+        
+        # Extract platform data if available
+        platform_data = yaml_data.get('platform', {})
+        
+        # Extract ammunition data if available
+        ammo_data = yaml_data.get('ammo', {})
+        bullet_data = ammo_data.get('bullet', {})
+        powder_data = ammo_data.get('powder', {})
+        case_data = ammo_data.get('case', {})
+        primer_data = ammo_data.get('primer', {})
         
         return {
             'group_es_mm': group_data.get('group_es_mm', 0),
@@ -212,7 +248,30 @@ def load_group_data(test_path):
             'pressure_hpa': environment_data.get('pressure_hpa', 0),
             'wind_speed_ms': environment_data.get('wind_speed_mps', 0),
             'wind_direction': environment_data.get('wind_dir_deg', ''),
-            'light_conditions': environment_data.get('weather', '')
+            'light_conditions': environment_data.get('weather', ''),
+            
+            # Platform data
+            'barrel_length_in': platform_data.get('barrel_length_in', 0),
+            'twist_rate': platform_data.get('twist_rate', ''),
+            
+            # Bullet data
+            'bullet_lot': bullet_data.get('lot', ''),
+            
+            # Powder data
+            'powder_lot': powder_data.get('lot', ''),
+            
+            # Case data
+            'case_brand': case_data.get('brand', ''),
+            'case_lot': case_data.get('lot', ''),
+            'neck_turned': case_data.get('neck_turned', ''),
+            'brass_sizing': case_data.get('brass_sizing', ''),
+            'bushing_size': case_data.get('bushing_size', 0),
+            'shoulder_bump': case_data.get('shoulder_bump', 0),
+            
+            # Primer data
+            'primer_brand': primer_data.get('brand', ''),
+            'primer_model': primer_data.get('model', ''),
+            'primer_lot': primer_data.get('lot', '')
         }
     except Exception as e:
         return {

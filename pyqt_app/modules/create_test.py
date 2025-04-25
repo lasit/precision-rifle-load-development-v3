@@ -9,7 +9,7 @@ import yaml
 import datetime
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
                              QFormLayout, QLineEdit, QGroupBox, QMessageBox, QDateEdit,
-                             QComboBox, QDoubleSpinBox, QTextEdit)
+                             QComboBox, QDoubleSpinBox, QTextEdit, QTabWidget)
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 
 # Add parent directory to path to import utils
@@ -189,26 +189,86 @@ class CreateTestWidget(QWidget):
             self.rifle_combo.addItems(rifle_list)
         layout.addRow("Rifle:", self.rifle_combo)
         
+        # Barrel length (numeric input)
+        self.barrel_length_spin = QDoubleSpinBox()
+        self.barrel_length_spin.setRange(0, 99.9)
+        self.barrel_length_spin.setDecimals(1)
+        self.barrel_length_spin.setSingleStep(0.5)
+        self.barrel_length_spin.setValue(24.0)  # Default value
+        layout.addRow("Barrel Length (in):", self.barrel_length_spin)
+        
+        # Twist rate (text input)
+        self.twist_rate_edit = QLineEdit()
+        self.twist_rate_edit.setPlaceholderText("e.g., 1:8 or 1:10")
+        layout.addRow("Twist Rate:", self.twist_rate_edit)
+        
         return group
 
     def _create_ammunition_group(self):
         group = QGroupBox("Ammunition")
         layout = QFormLayout(group)
         
-        # Bullet section
+        # Create a tabbed layout for better organization
+        ammo_tabs = QTabWidget()
+        
+        # Case Tab
+        case_tab = QWidget()
+        case_layout = QFormLayout(case_tab)
+        
+        # Case Brand (dropdown)
+        self.case_brand_combo = QComboBox()
+        case_brand_list = self.component_lists.get('case_brand', [])
+        if case_brand_list:
+            self.case_brand_combo.addItems(case_brand_list)
+        case_layout.addRow("Case Brand:", self.case_brand_combo)
+        
+        # Case Lot (text input)
+        self.case_lot_edit = QLineEdit()
+        case_layout.addRow("Case Lot:", self.case_lot_edit)
+        
+        # Neck Turned (dropdown)
+        self.neck_turned_combo = QComboBox()
+        self.neck_turned_combo.addItems(["No", "Yes"])
+        case_layout.addRow("Neck Turned:", self.neck_turned_combo)
+        
+        # Brass Sizing (dropdown)
+        self.brass_sizing_combo = QComboBox()
+        self.brass_sizing_combo.addItems(["Full", "Partial"])
+        case_layout.addRow("Brass Sizing:", self.brass_sizing_combo)
+        
+        # Bushing Size (numeric input)
+        self.bushing_size_spin = QDoubleSpinBox()
+        self.bushing_size_spin.setRange(0.001, 9.999)
+        self.bushing_size_spin.setDecimals(3)
+        self.bushing_size_spin.setSingleStep(0.001)
+        self.bushing_size_spin.setValue(0.245)  # Default value
+        case_layout.addRow("Bushing Size:", self.bushing_size_spin)
+        
+        # Shoulder Bump (numeric input)
+        self.shoulder_bump_spin = QDoubleSpinBox()
+        self.shoulder_bump_spin.setRange(0.0, 9.9)
+        self.shoulder_bump_spin.setDecimals(1)
+        self.shoulder_bump_spin.setSingleStep(0.1)
+        self.shoulder_bump_spin.setValue(1.5)  # Default value
+        case_layout.addRow("Shoulder Bump (thou):", self.shoulder_bump_spin)
+        
+        # Bullet Tab
+        bullet_tab = QWidget()
+        bullet_layout = QFormLayout(bullet_tab)
+        
         # Bullet Brand (dropdown)
         self.bullet_brand_combo = QComboBox()
         bullet_brand_list = self.component_lists.get('bullet_brand', [])
         if bullet_brand_list:
             self.bullet_brand_combo.addItems(bullet_brand_list)
-        layout.addRow("Bullet Brand:", self.bullet_brand_combo)
+        bullet_layout.addRow("Bullet Brand:", self.bullet_brand_combo)
         
         # Bullet Model (dropdown)
         self.bullet_model_combo = QComboBox()
         bullet_model_list = self.component_lists.get('bullet_model', [])
         if bullet_model_list:
             self.bullet_model_combo.addItems(bullet_model_list)
-        layout.addRow("Bullet Model:", self.bullet_model_combo)
+        bullet_layout.addRow("Bullet Model:", self.bullet_model_combo)
         
         # Bullet Weight (numeric input)
         self.bullet_weight_spin = QDoubleSpinBox()
@@ -216,22 +276,29 @@ class CreateTestWidget(QWidget):
         self.bullet_weight_spin.setDecimals(2)
         self.bullet_weight_spin.setSingleStep(0.1)
         self.bullet_weight_spin.setValue(75.0)  # Default value
-        layout.addRow("Bullet Weight (gr):", self.bullet_weight_spin)
+        bullet_layout.addRow("Bullet Weight (gr):", self.bullet_weight_spin)
         
-        # Powder section
+        # Bullet Lot (text input)
+        self.bullet_lot_edit = QLineEdit()
+        bullet_layout.addRow("Bullet Lot:", self.bullet_lot_edit)
+        
+        # Powder Tab
+        powder_tab = QWidget()
+        powder_layout = QFormLayout(powder_tab)
+        
         # Powder Brand (dropdown)
         self.powder_brand_combo = QComboBox()
         powder_brand_list = self.component_lists.get('powder_brand', [])
         if powder_brand_list:
             self.powder_brand_combo.addItems(powder_brand_list)
-        layout.addRow("Powder Brand:", self.powder_brand_combo)
+        powder_layout.addRow("Powder Brand:", self.powder_brand_combo)
         
         # Powder Model (dropdown)
         self.powder_model_combo = QComboBox()
         powder_model_list = self.component_lists.get('powder_model', [])
         if powder_model_list:
             self.powder_model_combo.addItems(powder_model_list)
-        layout.addRow("Powder Model:", self.powder_model_combo)
+        powder_layout.addRow("Powder Model:", self.powder_model_combo)
         
         # Powder Charge (numeric input)
         self.powder_charge_spin = QDoubleSpinBox()
@@ -239,16 +306,23 @@ class CreateTestWidget(QWidget):
         self.powder_charge_spin.setDecimals(2)
         self.powder_charge_spin.setSingleStep(0.1)
         self.powder_charge_spin.setValue(23.5)  # Default value
-        layout.addRow("Powder Charge (gr):", self.powder_charge_spin)
+        powder_layout.addRow("Powder Charge (gr):", self.powder_charge_spin)
         
-        # Cartridge section
+        # Powder Lot (text input)
+        self.powder_lot_edit = QLineEdit()
+        powder_layout.addRow("Powder Lot:", self.powder_lot_edit)
+        
+        # Cartridge Tab
+        cartridge_tab = QWidget()
+        cartridge_layout = QFormLayout(cartridge_tab)
+        
         # Cartridge OAL (numeric input)
         self.cartridge_oal_spin = QDoubleSpinBox()
         self.cartridge_oal_spin.setRange(0.001, 9.999)
         self.cartridge_oal_spin.setDecimals(3)
         self.cartridge_oal_spin.setSingleStep(0.001)
         self.cartridge_oal_spin.setValue(2.410)  # Default value
-        layout.addRow("Cartridge OAL (in):", self.cartridge_oal_spin)
+        cartridge_layout.addRow("Cartridge OAL (in):", self.cartridge_oal_spin)
         
         # Cartridge BTO (numeric input)
         self.cartridge_bto_spin = QDoubleSpinBox()
@@ -256,28 +330,39 @@ class CreateTestWidget(QWidget):
         self.cartridge_bto_spin.setDecimals(3)
         self.cartridge_bto_spin.setSingleStep(0.001)
         self.cartridge_bto_spin.setValue(1.784)  # Default value
-        layout.addRow("Cartridge BTO (in):", self.cartridge_bto_spin)
+        cartridge_layout.addRow("Cartridge BTO (in):", self.cartridge_bto_spin)
         
-        # Case Brand (dropdown)
-        self.case_brand_combo = QComboBox()
-        case_brand_list = self.component_lists.get('case_brand', [])
-        if case_brand_list:
-            self.case_brand_combo.addItems(case_brand_list)
-        layout.addRow("Case Brand:", self.case_brand_combo)
+        # Primer Tab
+        primer_tab = QWidget()
+        primer_layout = QFormLayout(primer_tab)
         
         # Primer Brand (dropdown)
         self.primer_brand_combo = QComboBox()
         primer_brand_list = self.component_lists.get('primer_brand', [])
         if primer_brand_list:
             self.primer_brand_combo.addItems(primer_brand_list)
-        layout.addRow("Primer Brand:", self.primer_brand_combo)
+        primer_layout.addRow("Primer Brand:", self.primer_brand_combo)
         
         # Primer Model (dropdown)
         self.primer_model_combo = QComboBox()
         primer_model_list = self.component_lists.get('primer_model', [])
         if primer_model_list:
             self.primer_model_combo.addItems(primer_model_list)
-        layout.addRow("Primer Model:", self.primer_model_combo)
+        primer_layout.addRow("Primer Model:", self.primer_model_combo)
+        
+        # Primer Lot (text input)
+        self.primer_lot_edit = QLineEdit()
+        primer_layout.addRow("Primer Lot:", self.primer_lot_edit)
+        
+        # Add tabs to the tab widget
+        ammo_tabs.addTab(case_tab, "Case")
+        ammo_tabs.addTab(bullet_tab, "Bullet")
+        ammo_tabs.addTab(powder_tab, "Powder")
+        ammo_tabs.addTab(cartridge_tab, "Cartridge")
+        ammo_tabs.addTab(primer_tab, "Primer")
+        
+        # Add the tab widget to the main layout
+        layout.addRow(ammo_tabs)
         
         return group
 
@@ -401,40 +486,84 @@ class CreateTestWidget(QWidget):
         # --- Save initial group.yaml ---
         group_yaml_path = os.path.join(new_test_dir, "group.yaml")
         try:
+            # Get additional platform data
+            barrel_length = self.barrel_length_spin.value()
+            twist_rate = self.twist_rate_edit.text()
+            
+            # Get additional case data
+            case_lot = self.case_lot_edit.text()
+            neck_turned = self.neck_turned_combo.currentText()
+            brass_sizing = self.brass_sizing_combo.currentText()
+            bushing_size = self.bushing_size_spin.value()
+            shoulder_bump = self.shoulder_bump_spin.value()
+            
+            # Get additional bullet data
+            bullet_lot = self.bullet_lot_edit.text()
+            
+            # Get additional powder data
+            powder_lot = self.powder_lot_edit.text()
+            
+            # Get additional primer data
+            primer_lot = self.primer_lot_edit.text()
+            
             # Restructure data for YAML format
             yaml_data = {
+                'test_id': test_id,
                 'date': test_data['date'],
                 'distance_m': test_data['distance_m'],
                 'notes': test_data['notes'],
                 'platform': {
                     'calibre': test_data['calibre'],
-                    'rifle': test_data['rifle']
+                    'rifle': test_data['rifle'],
+                    'barrel_length_in': barrel_length,
+                    'twist_rate': twist_rate
                 },
                 'ammo': {
                     'bullet': {
                         'brand': test_data['bullet_brand'],
                         'model': test_data['bullet_model'],
-                        'weight_gr': test_data['bullet_weight_gr']
+                        'weight_gr': test_data['bullet_weight_gr'],
+                        'lot': bullet_lot
                     },
                     'powder': {
                         'brand': test_data['powder_brand'],
                         'model': test_data['powder_model'],
-                        'charge_gr': test_data['powder_charge_gr']
+                        'charge_gr': test_data['powder_charge_gr'],
+                        'lot': powder_lot
                     },
                     'coal_in': test_data['coal_in'],
                     'b2o_in': test_data['b2o_in'],
                     'case': {
-                        'brand': test_data['case_brand']
+                        'brand': test_data['case_brand'],
+                        'lot': case_lot,
+                        'neck_turned': neck_turned,
+                        'brass_sizing': brass_sizing,
+                        'bushing_size': bushing_size,
+                        'shoulder_bump': shoulder_bump
                     },
                     'primer': {
                         'brand': test_data['primer_brand'],
-                        'model': test_data['primer_model']
+                        'model': test_data['primer_model'],
+                        'lot': primer_lot
                     }
+                },
+                'environment': {
+                    'temperature_c': None,
+                    'humidity_percent': None,
+                    'pressure_hpa': None,
+                    'wind_speed_mps': None,
+                    'wind_dir_deg': None,
+                    'weather': None
                 },
                 'group': {
                     'group_es_mm': None,
                     'group_es_moa': None,
-                    'mean_radius_mm': None
+                    'mean_radius_mm': None,
+                    'group_es_x_mm': None,
+                    'group_es_y_mm': None,
+                    'poi_x_mm': None,
+                    'poi_y_mm': None,
+                    'shots': None
                 },
                 'chrono': {
                     'avg_velocity_fps': None,
@@ -478,8 +607,28 @@ class CreateTestWidget(QWidget):
         self.date_edit.setDate(QDate.currentDate())
         self.notes_edit.clear()  # This works for QTextEdit too
         
-        # Reset numeric fields to defaults
+        # Reset platform fields
+        self.barrel_length_spin.setValue(24.0)
+        self.twist_rate_edit.clear()
+        
+        # Reset case fields
+        self.case_lot_edit.clear()
+        self.neck_turned_combo.setCurrentIndex(0)  # "No"
+        self.brass_sizing_combo.setCurrentIndex(0)  # "Full"
+        self.bushing_size_spin.setValue(0.245)
+        self.shoulder_bump_spin.setValue(1.5)
+        
+        # Reset bullet fields
         self.bullet_weight_spin.setValue(75.0)
+        self.bullet_lot_edit.clear()
+        
+        # Reset powder fields
         self.powder_charge_spin.setValue(23.5)
+        self.powder_lot_edit.clear()
+        
+        # Reset cartridge fields
         self.cartridge_oal_spin.setValue(2.410)
         self.cartridge_bto_spin.setValue(1.784)
+        
+        # Reset primer fields
+        self.primer_lot_edit.clear()
