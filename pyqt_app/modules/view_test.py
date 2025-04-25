@@ -10,10 +10,12 @@ ammunition components, environmental conditions, and results.
 import os
 import sys
 import yaml
+import pandas as pd
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                              QPushButton, QFormLayout, QLineEdit, QGroupBox, QScrollArea,
                              QMessageBox, QStyle, QDoubleSpinBox, QDateEdit, QTextEdit,
-                             QSlider, QToolBar, QSizePolicy, QTabWidget)
+                             QSlider, QToolBar, QSizePolicy, QTabWidget, QSplitter,
+                             QTableView)
 from PyQt6.QtCore import Qt, pyqtSignal, QDate, QPoint, QRect, QSize, QRectF
 from PyQt6.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent, QTransform, QCursor
 
@@ -21,6 +23,9 @@ from PyQt6.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent, QTransform,
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import settings manager and data loader
 from utils.settings_manager import SettingsManager
+from utils.data_loader import load_all_test_data
+# Import TestDataModel from data_analysis module
+from .data_analysis import TestDataModel
 
 # Path to the Component_List.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
@@ -166,6 +171,10 @@ class ViewTestWidget(QWidget):
         self.current_test_id = None
         self.test_data = {} # To hold loaded test data (from group.yaml)
         
+        # Initialize data
+        self.all_data = pd.DataFrame()
+        self.filtered_data = pd.DataFrame()
+        
         # Load component lists
         self.component_lists = self.load_component_lists()
 
@@ -173,20 +182,248 @@ class ViewTestWidget(QWidget):
         main_layout = QVBoxLayout(self)
         self.setLayout(main_layout) # Set the layout for the widget
         
-        # Top section: Test Selection
-        selection_layout = QHBoxLayout()
-        selection_layout.addWidget(QLabel("Select Test ID:"))
-        self.test_id_combo = QComboBox()
-        self.test_id_combo.setMinimumWidth(400)
-        self.test_id_combo.currentIndexChanged.connect(self.load_selected_test)
-        selection_layout.addWidget(self.test_id_combo)
-        selection_layout.addStretch()
-        main_layout.addLayout(selection_layout)
-
+        # Create a splitter for the filter/table section and details section
+        self.main_splitter = QSplitter(Qt.Orientation.Vertical)
+        main_layout.addWidget(self.main_splitter)
+        
+        # Top section: Filters and Table
+        filter_table_widget = QWidget()
+        filter_table_layout = QVBoxLayout(filter_table_widget)
+        
+        # Filter header
+        filter_header = QHBoxLayout()
+        filter_label = QLabel("Filter Tests")
+        filter_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        filter_header.addWidget(filter_label)
+        
+        # Reset button
+        reset_button = QPushButton("Reset All Filters")
+        reset_button.clicked.connect(self.reset_filters)
+        filter_header.addStretch()
+        filter_header.addWidget(reset_button)
+        
+        filter_table_layout.addLayout(filter_header)
+        
+        # Filter groups in horizontal layout
+        filter_groups = QHBoxLayout()
+        
+        # Test Info filters
+        test_info_group = QGroupBox("Test Info")
+        test_info_layout = QFormLayout(test_info_group)
+        
+        # Date range filter with calendar popups
+        self.date_from = QDateEdit()
+        self.date_from.setCalendarPopup(True)
+        self.date_from.setDisplayFormat("yyyy-MM-dd")
+        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
+        
+        self.date_to = QDateEdit()
+        self.date_to.setCalendarPopup(True)
+        self.date_to.setDisplayFormat("yyyy-MM-dd")
+        self.date_to.setDate(QDate.currentDate())  # Default to today
+        
+        date_layout = QHBoxLayout()
+        date_layout.addWidget(self.date_from)
+        date_layout.addWidget(QLabel("to"))
+        date_layout.addWidget(self.date_to)
+        test_info_layout.addRow("Date Range:", date_layout)
+        
+        # Distance filter
+        self.distance_filter_combo = QComboBox()
+        self.distance_filter_combo.addItems(["All", "100m", "200m", "300m"])
+        test_info_layout.addRow("Distance:", self.distance_filter_combo)
+        
+        filter_groups.addWidget(test_info_group)
+        
+        # Platform filters
+        platform_group = QGroupBox("Platform")
+        platform_layout = QFormLayout(platform_group)
+        
+        # Calibre filter
+        self.calibre_filter_combo = QComboBox()
+        self.calibre_filter_combo.addItem("All")
+        platform_layout.addRow("Calibre:", self.calibre_filter_combo)
+        
+        # Rifle filter
+        self.rifle_filter_combo = QComboBox()
+        self.rifle_filter_combo.addItem("All")
+        platform_layout.addRow("Rifle:", self.rifle_filter_combo)
+        
+        filter_groups.addWidget(platform_group)
+        
+        # Ammunition filters
+        ammo_group = QGroupBox("Ammunition")
+        ammo_layout = QFormLayout(ammo_group)
+        
+        # Bullet brand filter
+        self.bullet_brand_filter_combo = QComboBox()
+        self.bullet_brand_filter_combo.addItem("All")
+        ammo_layout.addRow("Bullet Brand:", self.bullet_brand_filter_combo)
+        
+        # Bullet weight filter
+        self.bullet_weight_min = QLineEdit()
+        self.bullet_weight_max = QLineEdit()
+        bullet_weight_layout = QHBoxLayout()
+        bullet_weight_layout.addWidget(self.bullet_weight_min)
+        bullet_weight_layout.addWidget(QLabel("to"))
+        bullet_weight_layout.addWidget(self.bullet_weight_max)
+        ammo_layout.addRow("Bullet Weight (gr):", bullet_weight_layout)
+        
+        # Powder brand filter
+        self.powder_brand_filter_combo = QComboBox()
+        self.powder_brand_filter_combo.addItem("All")
+        ammo_layout.addRow("Powder Brand:", self.powder_brand_filter_combo)
+        
+        # Powder charge range filter
+        self.charge_min = QLineEdit()
+        self.charge_max = QLineEdit()
+        charge_layout = QHBoxLayout()
+        charge_layout.addWidget(self.charge_min)
+        charge_layout.addWidget(QLabel("to"))
+        charge_layout.addWidget(self.charge_max)
+        ammo_layout.addRow("Charge (gr):", charge_layout)
+        
+        # COAL filter
+        self.coal_min = QLineEdit()
+        self.coal_max = QLineEdit()
+        coal_layout = QHBoxLayout()
+        coal_layout.addWidget(self.coal_min)
+        coal_layout.addWidget(QLabel("to"))
+        coal_layout.addWidget(self.coal_max)
+        ammo_layout.addRow("COAL (in):", coal_layout)
+        
+        # B2O filter
+        self.b2o_min = QLineEdit()
+        self.b2o_max = QLineEdit()
+        b2o_layout = QHBoxLayout()
+        b2o_layout.addWidget(self.b2o_min)
+        b2o_layout.addWidget(QLabel("to"))
+        b2o_layout.addWidget(self.b2o_max)
+        ammo_layout.addRow("B2O (in):", b2o_layout)
+        
+        filter_groups.addWidget(ammo_group)
+        
+        # Results Target filters
+        results_target_group = QGroupBox("Results Target")
+        results_target_layout = QFormLayout(results_target_group)
+        
+        # Number of shots filter
+        self.shots_min = QLineEdit()
+        self.shots_max = QLineEdit()
+        shots_layout = QHBoxLayout()
+        shots_layout.addWidget(self.shots_min)
+        shots_layout.addWidget(QLabel("to"))
+        shots_layout.addWidget(self.shots_max)
+        results_target_layout.addRow("Number of shots:", shots_layout)
+        
+        # Group size range filter
+        self.group_es_min = QLineEdit()
+        self.group_es_max = QLineEdit()
+        group_es_layout = QHBoxLayout()
+        group_es_layout.addWidget(self.group_es_min)
+        group_es_layout.addWidget(QLabel("to"))
+        group_es_layout.addWidget(self.group_es_max)
+        results_target_layout.addRow("Group ES (mm):", group_es_layout)
+        
+        # Group ES MOA filter
+        self.group_es_moa_min = QLineEdit()
+        self.group_es_moa_max = QLineEdit()
+        group_es_moa_layout = QHBoxLayout()
+        group_es_moa_layout.addWidget(self.group_es_moa_min)
+        group_es_moa_layout.addWidget(QLabel("to"))
+        group_es_moa_layout.addWidget(self.group_es_moa_max)
+        results_target_layout.addRow("Group ES (MOA):", group_es_moa_layout)
+        
+        # Mean Radius filter
+        self.mean_radius_min = QLineEdit()
+        self.mean_radius_max = QLineEdit()
+        mean_radius_layout = QHBoxLayout()
+        mean_radius_layout.addWidget(self.mean_radius_min)
+        mean_radius_layout.addWidget(QLabel("to"))
+        mean_radius_layout.addWidget(self.mean_radius_max)
+        results_target_layout.addRow("Mean Radius (mm):", mean_radius_layout)
+        
+        filter_groups.addWidget(results_target_group)
+        
+        # Results Velocity filters
+        results_velocity_group = QGroupBox("Results Velocity")
+        results_velocity_layout = QFormLayout(results_velocity_group)
+        
+        # Avg Velocity filter
+        self.avg_velocity_min = QLineEdit()
+        self.avg_velocity_max = QLineEdit()
+        avg_velocity_layout = QHBoxLayout()
+        avg_velocity_layout.addWidget(self.avg_velocity_min)
+        avg_velocity_layout.addWidget(QLabel("to"))
+        avg_velocity_layout.addWidget(self.avg_velocity_max)
+        results_velocity_layout.addRow("Avg Velocity (f/s):", avg_velocity_layout)
+        
+        # SD Velocity filter
+        self.sd_velocity_min = QLineEdit()
+        self.sd_velocity_max = QLineEdit()
+        sd_velocity_layout = QHBoxLayout()
+        sd_velocity_layout.addWidget(self.sd_velocity_min)
+        sd_velocity_layout.addWidget(QLabel("to"))
+        sd_velocity_layout.addWidget(self.sd_velocity_max)
+        results_velocity_layout.addRow("SD Velocity (f/s):", sd_velocity_layout)
+        
+        # ES Velocity filter
+        self.es_velocity_min = QLineEdit()
+        self.es_velocity_max = QLineEdit()
+        es_velocity_layout = QHBoxLayout()
+        es_velocity_layout.addWidget(self.es_velocity_min)
+        es_velocity_layout.addWidget(QLabel("to"))
+        es_velocity_layout.addWidget(self.es_velocity_max)
+        results_velocity_layout.addRow("ES Velocity (f/s):", es_velocity_layout)
+        
+        filter_groups.addWidget(results_velocity_group)
+        
+        filter_table_layout.addLayout(filter_groups)
+        
+        # Apply filters button
+        apply_button = QPushButton("Apply Filters")
+        apply_button.clicked.connect(self.apply_filters)
+        filter_table_layout.addWidget(apply_button)
+        
+        # Table header
+        table_header = QHBoxLayout()
+        table_label = QLabel("Filtered Tests")
+        table_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.result_count_label = QLabel("0 tests found")
+        table_header.addWidget(table_label)
+        table_header.addStretch()
+        table_header.addWidget(self.result_count_label)
+        
+        filter_table_layout.addLayout(table_header)
+        
+        # Test table
+        self.test_table = QTableView()
+        self.test_model = TestDataModel()
+        self.test_table.setModel(self.test_model)
+        
+        # Enable sorting
+        self.test_table.setSortingEnabled(True)
+        
+        # Enable selection
+        self.test_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.test_table.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        
+        # Connect selection to load test
+        self.test_table.selectionModel().selectionChanged.connect(self.on_table_selection_changed)
+        
+        filter_table_layout.addWidget(self.test_table)
+        
+        # Add the filter/table widget to the splitter
+        self.main_splitter.addWidget(filter_table_widget)
+        
+        # Bottom section: Test details
+        details_widget = QWidget()
+        details_layout = QVBoxLayout(details_widget)
+        
         # Scroll Area for test details
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        main_layout.addWidget(scroll_area)
+        details_layout.addWidget(scroll_area)
 
         # Widget inside scroll area to hold the form layouts
         scroll_content = QWidget()
@@ -232,9 +469,16 @@ class ViewTestWidget(QWidget):
         save_button.clicked.connect(self.save_changes)
         buttons_layout.addWidget(save_button)
         
-        main_layout.addLayout(buttons_layout)
-
-        self.populate_test_ids()
+        details_layout.addLayout(buttons_layout)
+        
+        # Add the details widget to the splitter
+        self.main_splitter.addWidget(details_widget)
+        
+        # Set initial splitter sizes
+        self.main_splitter.setSizes([300, 700])
+        
+        # Load test data
+        self.load_data()
 
     def load_component_lists(self):
         """Load component lists from the YAML file"""
@@ -378,6 +622,577 @@ class ViewTestWidget(QWidget):
         self.populate_test_ids()
         self.refresh_component_lists()
         
+    def load_data(self):
+        """Load test data from files"""
+        try:
+            # Load all test data
+            self.all_data = load_all_test_data(self.tests_dir)
+            
+            # If no data was loaded, create a sample DataFrame for demonstration
+            if len(self.all_data) == 0:
+                self.all_data = pd.DataFrame({
+                    "test_id": ["sample_test_1", "sample_test_2"],
+                    "date": ["2025-04-15", "2025-04-16"],
+                    "distance_m": [100, 100],
+                    "calibre": [".223", ".223"],
+                    "rifle": ["Tikka T3X", "Tikka T3X"],
+                    "bullet_brand": ["Hornady", "Hornady"],
+                    "bullet_model": ["ELD-M", "ELD-M"],
+                    "bullet_weight_gr": [75.0, 75.0],
+                    "powder_brand": ["ADI", "ADI"],
+                    "powder_model": ["2208", "2208"],
+                    "powder_charge_gr": [23.5, 24.0],
+                    "group_es_mm": [15.2, 12.8],
+                    "group_es_moa": [0.54, 0.45],
+                    "mean_radius_mm": [5.8, 4.9],
+                    "avg_velocity_fps": [2850.5, 2875.2],
+                    "sd_fps": [8.5, 7.2],
+                    "es_fps": [25.0, 22.5]
+                })
+        except Exception as e:
+            # If an error occurs, create a sample DataFrame
+            print(f"Error loading test data: {e}")
+            self.all_data = pd.DataFrame({
+                "test_id": ["sample_test_1", "sample_test_2"],
+                "date": ["2025-04-15", "2025-04-16"],
+                "distance_m": [100, 100],
+                "calibre": [".223", ".223"],
+                "rifle": ["Tikka T3X", "Tikka T3X"],
+                "bullet_brand": ["Hornady", "Hornady"],
+                "bullet_model": ["ELD-M", "ELD-M"],
+                "bullet_weight_gr": [75.0, 75.0],
+                "powder_brand": ["ADI", "ADI"],
+                "powder_model": ["2208", "2208"],
+                "powder_charge_gr": [23.5, 24.0],
+                "group_es_mm": [15.2, 12.8],
+                "group_es_moa": [0.54, 0.45],
+                "mean_radius_mm": [5.8, 4.9],
+                "avg_velocity_fps": [2850.5, 2875.2],
+                "sd_fps": [8.5, 7.2],
+                "es_fps": [25.0, 22.5]
+            })
+        
+        self.filtered_data = self.all_data.copy()
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update result count
+        self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Populate filter dropdowns
+        self.populate_filters()
+    
+    def populate_filters(self):
+        """Populate filter dropdowns with values from the data"""
+        # Calibre filter
+        calibres = sorted(self.all_data["calibre"].unique())
+        self.calibre_filter_combo.clear()
+        self.calibre_filter_combo.addItem("All")
+        self.calibre_filter_combo.addItems([str(c) for c in calibres if pd.notna(c)])
+        
+        # Rifle filter
+        rifles = sorted(self.all_data["rifle"].unique())
+        self.rifle_filter_combo.clear()
+        self.rifle_filter_combo.addItem("All")
+        self.rifle_filter_combo.addItems([str(r) for r in rifles if pd.notna(r)])
+        
+        # Bullet brand filter
+        bullet_brands = sorted(self.all_data["bullet_brand"].unique())
+        self.bullet_brand_filter_combo.clear()
+        self.bullet_brand_filter_combo.addItem("All")
+        self.bullet_brand_filter_combo.addItems([str(b) for b in bullet_brands if pd.notna(b)])
+        
+        # Powder brand filter
+        powder_brands = sorted(self.all_data["powder_brand"].unique())
+        self.powder_brand_filter_combo.clear()
+        self.powder_brand_filter_combo.addItem("All")
+        self.powder_brand_filter_combo.addItems([str(p) for p in powder_brands if pd.notna(p)])
+        
+        # Distance filter
+        distances = sorted(self.all_data["distance_m"].unique())
+        self.distance_filter_combo.clear()
+        self.distance_filter_combo.addItem("All")
+        self.distance_filter_combo.addItems([f"{int(d)}m" for d in distances if pd.notna(d)])
+    
+    def apply_filters(self):
+        """Apply filters to the data"""
+        filtered_df = self.all_data.copy()
+        
+        # Apply date range filter
+        try:
+            # Get dates from QDateEdit widgets
+            from_date = self.date_from.date().toString("yyyy-MM-dd")
+            to_date = self.date_to.date().toString("yyyy-MM-dd")
+            
+            # Check if the column exists in the dataframe
+            if "date" in filtered_df.columns:
+                # Handle NaN values by creating a mask that excludes them
+                mask = filtered_df["date"].notna()
+                mask = mask & (filtered_df["date"] >= from_date)
+                mask = mask & (filtered_df["date"] <= to_date)
+                
+                # Apply the mask to filter the dataframe
+                filtered_df = filtered_df[mask]
+            else:
+                print("Warning: 'date' column not found in the data")
+        except Exception as e:
+            print(f"Error applying date filter: {e}")
+        
+        # Apply distance filter
+        if self.distance_filter_combo.currentText() != "All":
+            distance_text = self.distance_filter_combo.currentText()
+            distance_value = int(distance_text.replace('m', ''))
+            filtered_df = filtered_df[filtered_df["distance_m"] == distance_value]
+        
+        # Apply calibre filter
+        if self.calibre_filter_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["calibre"] == self.calibre_filter_combo.currentText()]
+        
+        # Apply rifle filter
+        if self.rifle_filter_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["rifle"] == self.rifle_filter_combo.currentText()]
+        
+        # Apply bullet brand filter
+        if self.bullet_brand_filter_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["bullet_brand"] == self.bullet_brand_filter_combo.currentText()]
+        
+        # Apply bullet weight filter
+        if self.bullet_weight_min.text() and self.bullet_weight_max.text():
+            try:
+                min_bullet_weight = float(self.bullet_weight_min.text())
+                max_bullet_weight = float(self.bullet_weight_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "bullet_weight_gr" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["bullet_weight_gr"].notna()
+                    mask = mask & (filtered_df["bullet_weight_gr"] >= min_bullet_weight)
+                    mask = mask & (filtered_df["bullet_weight_gr"] <= max_bullet_weight)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'bullet_weight_gr' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Bullet Weight filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Bullet Weight filter: {e}")
+        
+        # Apply powder brand filter
+        if self.powder_brand_filter_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["powder_brand"] == self.powder_brand_filter_combo.currentText()]
+        
+        # Apply charge range filter
+        if self.charge_min.text() and self.charge_max.text():
+            try:
+                min_charge = float(self.charge_min.text())
+                max_charge = float(self.charge_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "powder_charge_gr" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["powder_charge_gr"].notna()
+                    mask = mask & (filtered_df["powder_charge_gr"] >= min_charge)
+                    mask = mask & (filtered_df["powder_charge_gr"] <= max_charge)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'powder_charge_gr' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Charge filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Charge filter: {e}")
+        
+        # Apply COAL filter
+        if self.coal_min.text() and self.coal_max.text():
+            try:
+                min_coal = float(self.coal_min.text())
+                max_coal = float(self.coal_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "coal_in" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["coal_in"].notna()
+                    mask = mask & (filtered_df["coal_in"] >= min_coal)
+                    mask = mask & (filtered_df["coal_in"] <= max_coal)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'coal_in' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting COAL filter values: {e}")
+            except Exception as e:
+                print(f"Error applying COAL filter: {e}")
+        
+        # Apply B2O filter
+        if self.b2o_min.text() and self.b2o_max.text():
+            try:
+                min_b2o = float(self.b2o_min.text())
+                max_b2o = float(self.b2o_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "b2o_in" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["b2o_in"].notna()
+                    mask = mask & (filtered_df["b2o_in"] >= min_b2o)
+                    mask = mask & (filtered_df["b2o_in"] <= max_b2o)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'b2o_in' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting B2O filter values: {e}")
+            except Exception as e:
+                print(f"Error applying B2O filter: {e}")
+        
+        # Apply Results Target filters
+        
+        # Number of shots filter
+        if self.shots_min.text() and self.shots_max.text():
+            try:
+                min_shots = int(self.shots_min.text())
+                max_shots = int(self.shots_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "shots" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["shots"].notna()
+                    mask = mask & (filtered_df["shots"] >= min_shots)
+                    mask = mask & (filtered_df["shots"] <= max_shots)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'shots' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Number of shots filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Number of shots filter: {e}")
+        
+        # Group ES (mm) filter
+        if self.group_es_min.text() and self.group_es_max.text():
+            try:
+                min_group_es = float(self.group_es_min.text())
+                max_group_es = float(self.group_es_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "group_es_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_mm"].notna()
+                    mask = mask & (filtered_df["group_es_mm"] >= min_group_es)
+                    mask = mask & (filtered_df["group_es_mm"] <= max_group_es)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES (mm) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES (mm) filter: {e}")
+        
+        # Group ES MOA filter
+        if self.group_es_moa_min.text() and self.group_es_moa_max.text():
+            try:
+                min_group_es_moa = float(self.group_es_moa_min.text())
+                max_group_es_moa = float(self.group_es_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "group_es_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_moa"].notna()
+                    mask = mask & (filtered_df["group_es_moa"] >= min_group_es_moa)
+                    mask = mask & (filtered_df["group_es_moa"] <= max_group_es_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES (MOA) filter: {e}")
+        
+        # Mean Radius filter
+        if self.mean_radius_min.text() and self.mean_radius_max.text():
+            try:
+                min_mean_radius = float(self.mean_radius_min.text())
+                max_mean_radius = float(self.mean_radius_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "mean_radius_mm" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["mean_radius_mm"].notna()
+                    mask = mask & (filtered_df["mean_radius_mm"] >= min_mean_radius)
+                    mask = mask & (filtered_df["mean_radius_mm"] <= max_mean_radius)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'mean_radius_mm' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Mean Radius filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Mean Radius filter: {e}")
+        
+        # Apply Results Velocity filters
+        
+        # Avg Velocity filter
+        if self.avg_velocity_min.text() and self.avg_velocity_max.text():
+            try:
+                min_avg_velocity = float(self.avg_velocity_min.text())
+                max_avg_velocity = float(self.avg_velocity_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "avg_velocity_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["avg_velocity_fps"].notna()
+                    mask = mask & (filtered_df["avg_velocity_fps"] >= min_avg_velocity)
+                    mask = mask & (filtered_df["avg_velocity_fps"] <= max_avg_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'avg_velocity_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Avg Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Avg Velocity filter: {e}")
+        
+        # SD Velocity filter
+        if self.sd_velocity_min.text() and self.sd_velocity_max.text():
+            try:
+                min_sd_velocity = float(self.sd_velocity_min.text())
+                max_sd_velocity = float(self.sd_velocity_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "sd_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["sd_fps"].notna()
+                    mask = mask & (filtered_df["sd_fps"] >= min_sd_velocity)
+                    mask = mask & (filtered_df["sd_fps"] <= max_sd_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'sd_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting SD Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying SD Velocity filter: {e}")
+        
+        # ES Velocity filter
+        if self.es_velocity_min.text() and self.es_velocity_max.text():
+            try:
+                min_es_velocity = float(self.es_velocity_min.text())
+                max_es_velocity = float(self.es_velocity_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "es_fps" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["es_fps"].notna()
+                    mask = mask & (filtered_df["es_fps"] >= min_es_velocity)
+                    mask = mask & (filtered_df["es_fps"] <= max_es_velocity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'es_fps' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting ES Velocity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying ES Velocity filter: {e}")
+        
+        # Update filtered data
+        self.filtered_data = filtered_df
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update result count
+        self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+    
+    def _save_current_filters(self):
+        """Save current filter values to a dictionary"""
+        filters = {
+            # Dropdowns
+            'calibre': self.calibre_filter_combo.currentText(),
+            'rifle': self.rifle_filter_combo.currentText(),
+            'bullet_brand': self.bullet_brand_filter_combo.currentText(),
+            'powder_brand': self.powder_brand_filter_combo.currentText(),
+            'distance': self.distance_filter_combo.currentText(),
+            
+            # Date range
+            'date_from': self.date_from.date(),
+            'date_to': self.date_to.date(),
+            
+            # Ammunition filters
+            'bullet_weight_min': self.bullet_weight_min.text(),
+            'bullet_weight_max': self.bullet_weight_max.text(),
+            'charge_min': self.charge_min.text(),
+            'charge_max': self.charge_max.text(),
+            'coal_min': self.coal_min.text(),
+            'coal_max': self.coal_max.text(),
+            'b2o_min': self.b2o_min.text(),
+            'b2o_max': self.b2o_max.text(),
+            
+            # Results Target filters
+            'shots_min': self.shots_min.text(),
+            'shots_max': self.shots_max.text(),
+            'group_es_min': self.group_es_min.text(),
+            'group_es_max': self.group_es_max.text(),
+            'group_es_moa_min': self.group_es_moa_min.text(),
+            'group_es_moa_max': self.group_es_moa_max.text(),
+            'mean_radius_min': self.mean_radius_min.text(),
+            'mean_radius_max': self.mean_radius_max.text(),
+            
+            # Results Velocity filters
+            'avg_velocity_min': self.avg_velocity_min.text(),
+            'avg_velocity_max': self.avg_velocity_max.text(),
+            'sd_velocity_min': self.sd_velocity_min.text(),
+            'sd_velocity_max': self.sd_velocity_max.text(),
+            'es_velocity_min': self.es_velocity_min.text(),
+            'es_velocity_max': self.es_velocity_max.text()
+        }
+        return filters
+    
+    def _restore_filters(self, filters):
+        """Restore filter values from a dictionary"""
+        # Dropdowns
+        index = self.calibre_filter_combo.findText(filters['calibre'])
+        if index >= 0:
+            self.calibre_filter_combo.setCurrentIndex(index)
+            
+        index = self.rifle_filter_combo.findText(filters['rifle'])
+        if index >= 0:
+            self.rifle_filter_combo.setCurrentIndex(index)
+            
+        index = self.bullet_brand_filter_combo.findText(filters['bullet_brand'])
+        if index >= 0:
+            self.bullet_brand_filter_combo.setCurrentIndex(index)
+            
+        index = self.powder_brand_filter_combo.findText(filters['powder_brand'])
+        if index >= 0:
+            self.powder_brand_filter_combo.setCurrentIndex(index)
+            
+        index = self.distance_filter_combo.findText(filters['distance'])
+        if index >= 0:
+            self.distance_filter_combo.setCurrentIndex(index)
+        
+        # Date range
+        self.date_from.setDate(filters['date_from'])
+        self.date_to.setDate(filters['date_to'])
+        
+        # Ammunition filters
+        self.bullet_weight_min.setText(filters['bullet_weight_min'])
+        self.bullet_weight_max.setText(filters['bullet_weight_max'])
+        self.charge_min.setText(filters['charge_min'])
+        self.charge_max.setText(filters['charge_max'])
+        self.coal_min.setText(filters['coal_min'])
+        self.coal_max.setText(filters['coal_max'])
+        self.b2o_min.setText(filters['b2o_min'])
+        self.b2o_max.setText(filters['b2o_max'])
+        
+        # Results Target filters
+        self.shots_min.setText(filters['shots_min'])
+        self.shots_max.setText(filters['shots_max'])
+        self.group_es_min.setText(filters['group_es_min'])
+        self.group_es_max.setText(filters['group_es_max'])
+        self.group_es_moa_min.setText(filters['group_es_moa_min'])
+        self.group_es_moa_max.setText(filters['group_es_moa_max'])
+        self.mean_radius_min.setText(filters['mean_radius_min'])
+        self.mean_radius_max.setText(filters['mean_radius_max'])
+        
+        # Results Velocity filters
+        self.avg_velocity_min.setText(filters['avg_velocity_min'])
+        self.avg_velocity_max.setText(filters['avg_velocity_max'])
+        self.sd_velocity_min.setText(filters['sd_velocity_min'])
+        self.sd_velocity_max.setText(filters['sd_velocity_max'])
+        self.es_velocity_min.setText(filters['es_velocity_min'])
+        self.es_velocity_max.setText(filters['es_velocity_max'])
+    
+    def reset_filters(self):
+        """Reset all filters to their default values"""
+        # Reset dropdowns
+        self.calibre_filter_combo.setCurrentIndex(0)
+        self.rifle_filter_combo.setCurrentIndex(0)
+        self.bullet_brand_filter_combo.setCurrentIndex(0)
+        self.powder_brand_filter_combo.setCurrentIndex(0)
+        self.distance_filter_combo.setCurrentIndex(0)
+        
+        # Reset date inputs to default values
+        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
+        self.date_to.setDate(QDate.currentDate())  # Default to today
+        
+        # Reset Ammunition filters
+        self.bullet_weight_min.clear()
+        self.bullet_weight_max.clear()
+        self.charge_min.clear()
+        self.charge_max.clear()
+        self.coal_min.clear()
+        self.coal_max.clear()
+        self.b2o_min.clear()
+        self.b2o_max.clear()
+        
+        # Reset Results Target filters
+        self.shots_min.clear()
+        self.shots_max.clear()
+        self.group_es_min.clear()
+        self.group_es_max.clear()
+        self.group_es_moa_min.clear()
+        self.group_es_moa_max.clear()
+        self.mean_radius_min.clear()
+        self.mean_radius_max.clear()
+        
+        # Reset Results Velocity filters
+        self.avg_velocity_min.clear()
+        self.avg_velocity_max.clear()
+        self.sd_velocity_min.clear()
+        self.sd_velocity_max.clear()
+        self.es_velocity_min.clear()
+        self.es_velocity_max.clear()
+        
+        # Apply filters (which will now show all data)
+        self.apply_filters()
+    
+    def on_table_selection_changed(self, selected, deselected):
+        """Handle selection changes in the table view"""
+        # Get the selected row
+        indexes = self.test_table.selectionModel().selectedRows()
+        if not indexes:
+            return
+        
+        # Get the test_id from the selected row
+        row_index = indexes[0].row()
+        test_id = self.filtered_data.iloc[row_index]['test_id']
+        
+        # Load the selected test
+        self.current_test_id = test_id
+        test_dir = os.path.join(self.tests_dir, self.current_test_id)
+        group_yaml_path = os.path.join(test_dir, "group.yaml")
+        
+        print(f"Loading test from table selection: {self.current_test_id} from {group_yaml_path}")
+        
+        if not os.path.exists(group_yaml_path):
+            QMessageBox.warning(self, "Error", f"group.yaml not found for test: {self.current_test_id}")
+            self.clear_details()
+            return
+        
+        try:
+            with open(group_yaml_path, 'r') as f:
+                # Use safe_load and ensure it's a dict even if file is empty/malformed
+                loaded_content = yaml.safe_load(f)
+                self.test_data = loaded_content if isinstance(loaded_content, dict) else {}
+            self.populate_details()
+            self.load_image()
+        except Exception as e:
+            QMessageBox.critical(self, "Error Loading Data", f"Failed to load data for {self.current_test_id}:\n{e}")
+            self.clear_details()
+    
     def populate_test_ids(self):
         """Populate the ComboBox with test IDs from the tests directory"""
         self.test_id_combo.clear()
@@ -505,12 +1320,16 @@ class ViewTestWidget(QWidget):
         
         # Brass Sizing (dropdown)
         self.brass_sizing_combo = QComboBox()
-        self.brass_sizing_combo.addItems(["Full", "Partial"])
+        brass_sizing_list = self.component_lists.get('brass_sizing', [])
+        if brass_sizing_list:
+            self.brass_sizing_combo.addItems(brass_sizing_list)
+        else:
+            self.brass_sizing_combo.addItems(["Neck Only with Bushing", "Neck Only - no bushing", "Full"])
         case_layout.addRow("Brass Sizing:", self.brass_sizing_combo)
         
         # Bushing Size (numeric input)
         self.bushing_size_spin = QDoubleSpinBox()
-        self.bushing_size_spin.setRange(0.001, 9.999)
+        self.bushing_size_spin.setRange(0.000, 9.999)
         self.bushing_size_spin.setDecimals(3)
         self.bushing_size_spin.setSingleStep(0.001)
         case_layout.addRow("Bushing Size:", self.bushing_size_spin)
@@ -1213,7 +2032,9 @@ class ViewTestWidget(QWidget):
         case_data['lot'] = self.case_lot_edit.text() or None
         case_data['neck_turned'] = self.neck_turned_combo.currentText() or None
         case_data['brass_sizing'] = self.brass_sizing_combo.currentText() or None
-        case_data['bushing_size'] = self.bushing_size_spin.value() if self.bushing_size_spin.value() > 0 else None
+        # For bushing size, we need to ensure it's saved even if it's 0
+        bushing_size_value = self.bushing_size_spin.value()
+        case_data['bushing_size'] = bushing_size_value
         case_data['shoulder_bump'] = self.shoulder_bump_spin.value() if self.shoulder_bump_spin.value() > 0 else None
         if any(case_data.values()): ammo_data['case'] = case_data
         
@@ -1322,6 +2143,23 @@ class ViewTestWidget(QWidget):
             
             # Emit signal to notify other widgets that a test has been updated
             self.testUpdated.emit()
+            
+            # Save current filter values
+            current_filters = self._save_current_filters()
+            
+            # Reload the data to update the filtered table
+            self.load_data()
+            
+            # Restore filter values and reapply filters
+            self._restore_filters(current_filters)
+            self.apply_filters()
+            
+            # Reselect the current test in the table
+            if self.current_test_id:
+                for row in range(self.filtered_data.shape[0]):
+                    if self.filtered_data.iloc[row]['test_id'] == self.current_test_id:
+                        self.test_table.selectRow(row)
+                        break
             
             QMessageBox.information(self, "Save Successful", f"Changes saved successfully for {self.current_test_id}")
         except Exception as e:

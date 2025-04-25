@@ -24,23 +24,33 @@ The main window (`pyqt_app/main.py`) is the central component of the application
 
 The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and edit existing tests. It:
 
-- Displays a list of available tests
+- Displays a comprehensive filtering system similar to the Data Analysis tab
+- Shows filtered tests in a sortable table view
+- Allows selection of tests from the table to view and edit details
 - Shows test details in a two-column layout
 - Allows editing of test parameters
 - Provides interactive target image viewing with zoom and pan capabilities
 - Saves changes back to the test file
+- Preserves filter settings when saving changes
+- Uses component lists from Component_List.yaml for dropdown options
 
 ### Key Classes
 
 - `ViewTestWidget`: Main widget for viewing and editing tests
 - `ZoomableImageLabel`: Custom QLabel that supports zooming and panning of target images
+- `TestDataModel`: Reused from Data Analysis module for displaying test data in a table
 
 ### Key Methods
 
 - `__init__()`: Initializes the widget and sets up the UI
-- `setup_ui()`: Sets up the UI components with a two-column layout
-- `load_test()`: Loads a test from a file
-- `save_test()`: Saves changes to a test file
+- `load_data()`: Loads all tests from the active database
+- `apply_filters()`: Filters tests based on user criteria with robust error handling
+- `reset_filters()`: Resets all filters to their default values
+- `_save_current_filters()`: Saves current filter values to a dictionary
+- `_restore_filters()`: Restores filter values from a dictionary
+- `on_table_selection_changed()`: Handles selection changes in the table view
+- `load_selected_test()`: Loads a test from a file
+- `save_changes()`: Saves changes to a test file
 - `refresh()`: Refreshes the list of available tests
 - `refresh_component_lists()`: Refreshes the component dropdown lists
 - `_create_image_group()`: Creates the target image group with zoom and pan capabilities
