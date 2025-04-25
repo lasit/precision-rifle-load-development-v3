@@ -285,22 +285,40 @@ class CreateTestWidget(QWidget):
         """Generates a unique folder name based on test data."""
         # Similar logic to the Streamlit app's generate_test_id
         date_str = data.get('date', datetime.date.today().strftime('%Y-%m-%d'))
-        dist = data.get('distance_m', 'Dist')
+        
+        # Format distance with 'm' suffix
+        dist_value = data.get('distance_m', 0)
+        dist = f"{dist_value}m"
+        
         cal = data.get('calibre', 'Cal').replace('.', '') # Remove dots from calibre
         rifle = data.get('rifle', 'Rifle').replace(' ', '-')
         case = data.get('case_brand', 'Case')
         bullet_brand = data.get('bullet_brand', 'BulletBrand')
         bullet_model = data.get('bullet_model', 'BulletModel').replace(' ', '-')
-        bullet_wt = data.get('bullet_weight_gr', 'Wt')
+        
+        # Format bullet weight with no decimal places
+        bullet_wt_value = data.get('bullet_weight_gr', 0)
+        bullet_wt = f"{int(bullet_wt_value)}"
+        
         powder_brand = data.get('powder_brand', 'PowderBrand')
         powder_model = data.get('powder_model', 'PowderModel').replace(' ', '-')
-        powder_chg = data.get('powder_charge_gr', 'Chg')
-        oal = data.get('coal_in', 'OAL')
-        bto = data.get('b2o_in', 'BTO')
+        
+        # Format powder charge with exactly 2 decimal places
+        powder_chg_value = data.get('powder_charge_gr', 0)
+        powder_chg = f"{powder_chg_value:.2f}"
+        
+        # Format COAL with 3 decimal places
+        oal_value = data.get('coal_in', 0)
+        oal = f"{oal_value:.3f}"
+        
+        # Format B2O with 3 decimal places
+        bto_value = data.get('b2o_in', 0)
+        bto = f"{bto_value:.3f}"
+        
         primer_brand = data.get('primer_brand', 'PrimerBrand')
         primer_model = data.get('primer_model', 'PrimerModel')
 
-        # Construct the folder name (adjust formatting as needed)
+        # Construct the folder name with proper formatting
         folder_name = (
             f"{date_str}__{dist}_{cal}_{rifle}_{case}_{bullet_brand}_{bullet_model}_{bullet_wt}gr_"
             f"{powder_brand}_{powder_model}_{powder_chg}gr_{oal}in_{bto}in_"
