@@ -97,9 +97,9 @@ results_velocity:
 notes: "This load performed well with minimal vertical dispersion."
 ```
 
-## Component List Structure
+## Lists Structure
 
-The component lists are stored in a single YAML file (`Component_List.yaml`) in the application's root directory. This file contains lists of available options for various dropdown menus in the application.
+The lists are stored in a single YAML file (`Lists.yaml`) in the application's root directory. This file contains lists of available options for various dropdown menus in the application.
 
 ```yaml
 # Rifles

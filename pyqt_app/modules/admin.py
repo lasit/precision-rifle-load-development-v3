@@ -18,10 +18,10 @@ from PyQt6.QtGui import QIcon
 # Add parent directory to path to import utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Path to the Component_List.yaml file (relative to the project root)
+# Path to the Lists.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "Component_List.yaml"
+    "Lists.yaml"
 )
 
 class ComponentListEditor(QWidget):
@@ -191,7 +191,8 @@ class AdminWidget(QWidget):
             {"key": "bullet_model", "name": "Bullet Model"},
             {"key": "primer_brand", "name": "Primer Brand"},
             {"key": "primer_model", "name": "Primer Model"},
-            {"key": "brass_sizing", "name": "Brass Sizing"}
+            {"key": "brass_sizing", "name": "Brass Sizing"},
+            {"key": "sky", "name": "Sky Conditions"}
         ]
         
         # Component editors
@@ -209,7 +210,7 @@ class AdminWidget(QWidget):
         main_layout = QVBoxLayout(self)
         
         # Header
-        header_label = QLabel("Component List Administration")
+        header_label = QLabel("Lists Administration")
         header_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         main_layout.addWidget(header_label)
         

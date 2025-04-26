@@ -46,7 +46,7 @@ Reloading/
 │   └── utils/               ← Utility functions
 │       ├── __init__.py      ← Package initialization
 │       └── data_loader.py   ← Data loading and processing functions
-├── Component_List.yaml      ← Dropdown list data
+├── Lists.yaml               ← Dropdown lists for various options
 ├── requirements.txt         ← Project dependencies
 └── tests/                   ← Test data folders
     └── [test-folders]/      ← Individual test folders
@@ -137,7 +137,7 @@ The app uses a consistent data structure for all test data, including:
 - Notes
 
 ### Component Lists
-The app maintains lists of common components in Component_List.yaml:
+The app maintains lists of common components in Lists.yaml:
 - Calibre options
 - Rifle options
 - Case brand options

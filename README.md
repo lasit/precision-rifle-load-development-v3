@@ -75,7 +75,7 @@ The application has four main tabs:
     - `admin.py`: Component list management
   - `utils/`: Utility functions
     - `data_loader.py`: Data loading and processing functions
-- `Component_List.yaml`: Dropdown list data
+- `Lists.yaml`: Dropdown lists for various options
 - `run.py`: Convenience script to start the application
 - `tests/`: Directory containing test data folders
 

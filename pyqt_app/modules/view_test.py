@@ -27,10 +27,10 @@ from utils.data_loader import load_all_test_data
 # Import TestDataModel from data_analysis module
 from .data_analysis import TestDataModel
 
-# Path to the Component_List.yaml file (relative to the project root)
+# Path to the Lists.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "Component_List.yaml"
+    "Lists.yaml"
 )
 
 class ZoomableImageLabel(QLabel):
@@ -174,6 +174,9 @@ class ViewTestWidget(QWidget):
         # Initialize data
         self.all_data = pd.DataFrame()
         self.filtered_data = pd.DataFrame()
+        
+        # Variable to store copied environment data
+        self.copied_env_data = None
         
         # Load component lists
         self.component_lists = self.load_component_lists()
@@ -614,6 +617,22 @@ class ViewTestWidget(QWidget):
             elif current_primer_model:
                 self.primer_model_combo.addItem(current_primer_model)
                 self.primer_model_combo.setCurrentText(current_primer_model)
+        
+        # Sky (Weather)
+        current_weather = self.weather_combo.currentText()
+        self.weather_combo.clear()
+        sky_list = self.component_lists.get('sky', [])
+        if sky_list:
+            self.weather_combo.addItems(sky_list)
+            index = self.weather_combo.findText(current_weather)
+            if index >= 0:
+                self.weather_combo.setCurrentIndex(index)
+            elif current_weather:
+                self.weather_combo.addItem(current_weather)
+                self.weather_combo.setCurrentText(current_weather)
+        else:
+            # Fallback to hardcoded values if list is empty
+            self.weather_combo.addItems(["Clear", "Partly Cloudy", "Cloudy", "Overcast", "Rain", "Snow"])
     
     def refresh(self):
         """Refresh the widget data (test IDs list)"""
@@ -1537,10 +1556,110 @@ class ViewTestWidget(QWidget):
         
         # Sky condition
         self.weather_combo = QComboBox()
-        self.weather_combo.addItems(["Clear", "Partly Cloudy", "Cloudy", "Overcast", "Rain", "Snow"])
+        sky_list = self.component_lists.get('sky', [])
+        if sky_list:
+            self.weather_combo.addItems(sky_list)
+        else:
+            # Fallback to hardcoded values if list is empty
+            self.weather_combo.addItems(["Clear", "Partly Cloudy", "Cloudy", "Overcast", "Rain", "Snow"])
         layout.addRow("Sky:", self.weather_combo)
         
+        # Add Copy/Paste buttons
+        buttons_layout = QHBoxLayout()
+        
+        # Copy button
+        self.copy_env_button = QPushButton("Copy Environment Data")
+        self.copy_env_button.clicked.connect(self.copy_environment_data)
+        buttons_layout.addWidget(self.copy_env_button)
+        
+        # Paste button (initially disabled)
+        self.paste_env_button = QPushButton("Paste Environment Data")
+        self.paste_env_button.clicked.connect(self.paste_environment_data)
+        self.paste_env_button.setEnabled(False)  # Disabled until data is copied
+        buttons_layout.addWidget(self.paste_env_button)
+        
+        # Add buttons to layout
+        layout.addRow("", buttons_layout)
+        
         return group
+    
+    def copy_environment_data(self):
+        """Copy the current environment data to the clipboard"""
+        if not self.current_test_id:
+            QMessageBox.warning(self, "No Test Selected", "Please select a test to copy environment data from.")
+            return
+        
+        # Create a dictionary to store the environment data
+        self.copied_env_data = {
+            'temperature_c': self.temperature_c_edit.text(),
+            'humidity_percent': self.humidity_percent_edit.text(),
+            'pressure_hpa': self.pressure_hpa_edit.text(),
+            'wind_speed_mps': self.wind_speed_mps_edit.text(),
+            'wind_dir_deg': self.wind_dir_deg_edit.text(),
+            'weather': self.weather_combo.currentText()
+        }
+        
+        # Enable the paste button
+        self.paste_env_button.setEnabled(True)
+        
+        # Show a confirmation message
+        QMessageBox.information(self, "Environment Data Copied", 
+                               f"Environment data copied from test: {self.current_test_id}\n\n"
+                               f"Temperature: {self.copied_env_data['temperature_c']} °C\n"
+                               f"Humidity: {self.copied_env_data['humidity_percent']} %\n"
+                               f"Pressure: {self.copied_env_data['pressure_hpa']} hpa\n"
+                               f"Wind Speed: {self.copied_env_data['wind_speed_mps']} m/s\n"
+                               f"Wind Direction: {self.copied_env_data['wind_dir_deg']} deg\n"
+                               f"Sky: {self.copied_env_data['weather']}")
+    
+    def paste_environment_data(self):
+        """Paste the copied environment data into the current test"""
+        if not self.current_test_id:
+            QMessageBox.warning(self, "No Test Selected", "Please select a test to paste environment data to.")
+            return
+        
+        if not self.copied_env_data:
+            QMessageBox.warning(self, "No Data to Paste", "Please copy environment data from a test first.")
+            return
+        
+        # Confirm with the user
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Paste",
+            f"Are you sure you want to paste environment data to test:\n{self.current_test_id}?\n\n"
+            f"Temperature: {self.copied_env_data['temperature_c']} °C\n"
+            f"Humidity: {self.copied_env_data['humidity_percent']} %\n"
+            f"Pressure: {self.copied_env_data['pressure_hpa']} hpa\n"
+            f"Wind Speed: {self.copied_env_data['wind_speed_mps']} m/s\n"
+            f"Wind Direction: {self.copied_env_data['wind_dir_deg']} deg\n"
+            f"Sky: {self.copied_env_data['weather']}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No  # Default is No to prevent accidental paste
+        )
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            # Paste the environment data
+            self.temperature_c_edit.setText(self.copied_env_data['temperature_c'])
+            self.humidity_percent_edit.setText(self.copied_env_data['humidity_percent'])
+            self.pressure_hpa_edit.setText(self.copied_env_data['pressure_hpa'])
+            self.wind_speed_mps_edit.setText(self.copied_env_data['wind_speed_mps'])
+            self.wind_dir_deg_edit.setText(self.copied_env_data['wind_dir_deg'])
+            
+            # Set weather in dropdown
+            weather = self.copied_env_data['weather']
+            if weather:
+                index = self.weather_combo.findText(weather)
+                if index >= 0:
+                    self.weather_combo.setCurrentIndex(index)
+                elif weather:
+                    # If not found in the list but has a value, add it
+                    self.weather_combo.addItem(weather)
+                    self.weather_combo.setCurrentText(weather)
+            
+            # Show a confirmation message
+            QMessageBox.information(self, "Environment Data Pasted", 
+                                   f"Environment data pasted to test: {self.current_test_id}\n\n"
+                                   "Remember to click 'Save Changes' to save the updated data.")
         
     def _create_image_group(self):
         group = QGroupBox("Target Image")

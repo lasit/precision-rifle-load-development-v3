@@ -29,6 +29,9 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Comprehensive filtering system in the View Test tab, similar to the Data Analysis tab
 - Table view in the View Test tab for displaying filtered tests
 - Filter persistence when saving changes in the View Test tab
+- Environment data copy/paste feature allowing users to copy environment data from one test and paste it into another
+- Renamed Component_List.yaml to Lists.yaml for better organization
+- Added Sky (weather) conditions list to Lists.yaml
 
 ### Changed
 - Improved settings management with platform-specific storage locations

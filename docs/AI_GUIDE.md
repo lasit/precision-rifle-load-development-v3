@@ -26,7 +26,7 @@ The Precision Rifle Load Development application is a PyQt-based desktop applica
   - `utils/`: Utility functions
     - `data_loader.py`: Data loading and processing functions
     - `settings_manager.py`: Settings management with multiple database support
-- `Component_List.yaml`: Dropdown list data
+- `Lists.yaml`: Dropdown lists for various options
 - `run.py`: Convenience script to start the application
 - `start_app.command`: macOS script for easy application launch with dependency checking
 - `start_app.bat`: Windows script for easy application launch with dependency checking

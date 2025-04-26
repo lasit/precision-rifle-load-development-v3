@@ -16,10 +16,10 @@ from PyQt6.QtCore import Qt, QDate, pyqtSignal
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.settings_manager import SettingsManager
 
-# Path to the Component_List.yaml file (relative to the project root)
+# Path to the Lists.yaml file (relative to the project root)
 COMPONENT_LIST_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "Component_List.yaml"
+    "Lists.yaml"
 )
 
 class CreateTestWidget(QWidget):

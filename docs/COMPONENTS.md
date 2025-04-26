@@ -32,7 +32,8 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - Provides interactive target image viewing with zoom and pan capabilities
 - Saves changes back to the test file
 - Preserves filter settings when saving changes
-- Uses component lists from Component_List.yaml for dropdown options
+- Uses component lists from Lists.yaml for dropdown options
+- Supports copying and pasting of environment data between tests
 
 ### Key Classes
 
@@ -53,6 +54,8 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - `save_changes()`: Saves changes to a test file
 - `refresh()`: Refreshes the list of available tests
 - `refresh_component_lists()`: Refreshes the component dropdown lists
+- `copy_environment_data()`: Copies environment data from the current test
+- `paste_environment_data()`: Pastes copied environment data into the current test
 - `_create_image_group()`: Creates the target image group with zoom and pan capabilities
 - `_create_results_target_group()`: Creates the Results Target group
 - `_create_results_velocity_group()`: Creates the Results Velocity group
