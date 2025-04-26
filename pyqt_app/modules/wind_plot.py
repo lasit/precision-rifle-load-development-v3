@@ -266,11 +266,16 @@ class WindPlotWidget(QWidget):
         self.profile_description.setStyleSheet("font-style: italic;")
         profile_layout.addWidget(self.profile_description)
         
-        # Add PDF export button
-        pdf_button = QPushButton("Export to PDF")
-        pdf_button.clicked.connect(self.export_to_pdf)
-        pdf_button.setStyleSheet("font-weight: bold; padding: 8px;")
-        profile_layout.addWidget(pdf_button)
+        # Add PDF export buttons
+        pdf_button_8 = QPushButton("Export to PDF (8 per page)")
+        pdf_button_8.clicked.connect(self.export_to_pdf_8_per_page)
+        pdf_button_8.setStyleSheet("font-weight: bold; padding: 8px;")
+        profile_layout.addWidget(pdf_button_8)
+        
+        pdf_button_2 = QPushButton("Export to PDF (2 per page)")
+        pdf_button_2.clicked.connect(self.export_to_pdf_2_per_page)
+        pdf_button_2.setStyleSheet("font-weight: bold; padding: 8px;")
+        profile_layout.addWidget(pdf_button_2)
         
         left_column.addWidget(profile_section)
         
@@ -570,7 +575,7 @@ class WindPlotWidget(QWidget):
         if self.plot_tabs.count() > 0:
             self.plot_tabs.setCurrentIndex(0)
     
-    def export_to_pdf(self):
+    def export_to_pdf_8_per_page(self):
         """Export the wind plots to a PDF file"""
         # Check if there are any distances in the current profile
         if not self.profiles or not self.profiles[self.current_profile_index]["distances"]:
@@ -693,19 +698,55 @@ class WindPlotWidget(QWidget):
         # === DRAW WIND ANGLE LINES AND LABELS (0° to 90° and mirrored) ===
         angles_deg = [0, 15, 30, 45, 60, 75, 90]
         angles_rad = np.deg2rad(angles_deg)
+        
+        # Clock time equivalents - angles are in the angles_deg array, so we need to map to the corresponding clock times
+        # For right side (positive X axis): 30° = 01:00, 60° = 02:00, 90° = 03:00
+        # For left side (negative X axis): 30° = 11:00, 60° = 10:00, 90° = 09:00
+        clock_times_right = {
+            30: "01:00",
+            60: "02:00",
+            90: "03:00"
+        }
+        
+        clock_times_left = {
+            30: "11:00",
+            60: "10:00",
+            90: "09:00"
+        }
+        
         for angle_deg, angle_rad in zip(angles_deg, angles_rad):
-            label = f"{90 - angle_deg}°"
             # Use 7 m/s for the angle lines to match the circles
             angle_line_length = 7
+            
             # Right side
             x_r = angle_line_length * np.cos(angle_rad)
             y_r = angle_line_length * np.sin(angle_rad)
             ax.plot([0, x_r], [0, y_r], color='red', lw=1)
-            ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=7)
+            
             # Left side (mirror)
             x_l = -x_r
             ax.plot([0, x_l], [0, y_r], color='red', lw=1)
-            ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=7)
+            
+            # Degree labels - show 0° only once at the top
+            label = f"{90 - angle_deg}°"
+            
+            if angle_deg == 0:
+                # For 0° (90° on our label), only show at the top (y-axis)
+                ax.text(0, 7.2, label, ha='center', va='bottom', fontsize=14, weight='bold')
+            else:
+                # For all other angles, show on both sides
+                ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=14, weight='bold')
+                ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=14, weight='bold')
+                
+                # Clock time labels for specific angles
+                if angle_deg in clock_times_right:
+                    # Right side clock time
+                    ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
+                            ha='left', va='bottom', fontsize=14, weight='bold', color='blue')
+                    
+                    # Left side clock time
+                    ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
+                            ha='right', va='bottom', fontsize=14, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
         for x in bar_positions:
@@ -714,15 +755,21 @@ class WindPlotWidget(QWidget):
         # === LABEL THE MOA SCALE BELOW THE X-AXIS ===
         for moa in moa_major_ticks:
             x = moa * moa_to_x
-            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=7)
+            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=21)  # 3x larger
         
         # === AXIS SETTINGS ===
         ax.set_xlim(-max_speed, max_speed)
         ax.set_ylim(-1, max_speed)
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
-        ax.set_xlabel('Wind Speed (m/s)', fontsize=8)
-        ax.set_ylabel('Wind Speed (m/s)', fontsize=8)
+        ax.set_xlabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
+        ax.set_ylabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
+        
+        # Add a secondary x-axis at the top for MOA values
+        ax2 = ax.twiny()
+        ax2.set_xlim(-max_moa, max_moa)
+        ax2.set_xticks(moa_major_ticks)
+        ax2.set_xlabel('MOA', fontsize=24)  # 3x larger
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
@@ -731,6 +778,82 @@ class WindPlotWidget(QWidget):
         # === FINAL FORMATTING ===
         ax.grid(True, linestyle='--', alpha=0.5)
         ax.set_title(f'Wind Drift Chart for {distance}m\n7 m/s at 90° = {moa_drift_at_7ms} MOA', fontsize=10)
+    
+    def export_to_pdf_2_per_page(self):
+        """Export the wind plots to a PDF file with 2 plots per page"""
+        # Check if there are any distances in the current profile
+        if not self.profiles or not self.profiles[self.current_profile_index]["distances"]:
+            QMessageBox.warning(self, "No Data", "Please add at least one distance to the profile before exporting to PDF.")
+            return
+        
+        # Get the file path from the user
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save PDF",
+            "",
+            "PDF Files (*.pdf)"
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        # Add .pdf extension if not present
+        if not file_path.lower().endswith('.pdf'):
+            file_path += '.pdf'
+        
+        try:
+            # Collect input data
+            distances, moa_values = self.collect_input_data()
+            if not distances or not moa_values:
+                return
+            
+            # Sort distances
+            distances.sort()
+            
+            # Get the profile name
+            profile_name = self.profiles[self.current_profile_index]["name"]
+            
+            # Create a PDF with the plots
+            with PdfPages(file_path) as pdf:
+                # Calculate how many pages we need
+                plots_per_page = 2  # 1 column x 2 rows
+                num_pages = (len(distances) + plots_per_page - 1) // plots_per_page
+                
+                for page in range(num_pages):
+                    # Create a figure with 2 rows and 1 column
+                    fig, axes = plt.subplots(2, 1, figsize=(8.5, 11))  # A4 size in inches (portrait)
+                    
+                    # Flatten the axes array for easier indexing
+                    axes = axes.flatten()
+                    
+                    # Add a title to the page
+                    fig.suptitle(f"Wind Drift Charts - {profile_name}", fontsize=16)
+                    
+                    # Add plots to the page
+                    for i in range(plots_per_page):
+                        plot_index = page * plots_per_page + i
+                        
+                        if plot_index < len(distances):
+                            distance = distances[plot_index]
+                            moa_drift = moa_values[distance]
+                            
+                            # Draw the plot on the current axis
+                            self.draw_wind_plot_on_axis(axes[i], distance, moa_drift)
+                        else:
+                            # Hide unused axes
+                            axes[i].axis('off')
+                    
+                    # Adjust layout
+                    plt.tight_layout(rect=[0, 0, 1, 0.97])  # Leave room for the title
+                    
+                    # Add the page to the PDF
+                    pdf.savefig(fig)
+                    plt.close(fig)
+            
+            QMessageBox.information(self, "PDF Exported", f"Wind plots exported to {file_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to export PDF: {e}")
     
     def draw_wind_plot(self, canvas, distance, moa_drift_at_7ms):
         """Draw the wind drift plot on the given canvas"""
@@ -791,19 +914,53 @@ class WindPlotWidget(QWidget):
         # === DRAW WIND ANGLE LINES AND LABELS (0° to 90° and mirrored) ===
         angles_deg = [0, 15, 30, 45, 60, 75, 90]
         angles_rad = np.deg2rad(angles_deg)
+        
+        # Clock time equivalents
+        clock_times_right = {
+            30: "01:00",
+            60: "02:00",
+            90: "03:00"
+        }
+        
+        clock_times_left = {
+            30: "11:00",
+            60: "10:00",
+            90: "09:00"
+        }
+        
         for angle_deg, angle_rad in zip(angles_deg, angles_rad):
-            label = f"{90 - angle_deg}°"
             # Use 7 m/s for the angle lines to match the circles
             angle_line_length = 7
+            
             # Right side
             x_r = angle_line_length * np.cos(angle_rad)
             y_r = angle_line_length * np.sin(angle_rad)
             ax.plot([0, x_r], [0, y_r], color='red', lw=1)
-            ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=9)
+            
             # Left side (mirror)
             x_l = -x_r
             ax.plot([0, x_l], [0, y_r], color='red', lw=1)
-            ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=9)
+            
+            # Degree labels - show 0° only once at the top
+            label = f"{90 - angle_deg}°"
+            
+            if angle_deg == 0:
+                # For 0° (90° on our label), only show at the top (y-axis)
+                ax.text(0, 7.2, label, ha='center', va='bottom', fontsize=18, weight='bold')
+            else:
+                # For all other angles, show on both sides
+                ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=18, weight='bold')
+                ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=18, weight='bold')
+                
+                # Clock time labels for specific angles
+                if angle_deg in clock_times_right:
+                    # Right side clock time
+                    ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
+                            ha='left', va='bottom', fontsize=18, weight='bold', color='blue')
+                    
+                    # Left side clock time
+                    ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
+                            ha='right', va='bottom', fontsize=18, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
         for x in bar_positions:
@@ -812,15 +969,21 @@ class WindPlotWidget(QWidget):
         # === LABEL THE MOA SCALE BELOW THE X-AXIS ===
         for moa in moa_major_ticks:
             x = moa * moa_to_x
-            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=8)
+            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=24)  # 3x larger
         
         # === AXIS SETTINGS ===
         ax.set_xlim(-max_speed, max_speed)
         ax.set_ylim(-1, max_speed)
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
-        ax.set_xlabel('Wind Speed (m/s)', fontsize=12)
-        ax.set_ylabel('Wind Speed (m/s)', fontsize=12)
+        ax.set_xlabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
+        ax.set_ylabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
+        
+        # Add a secondary x-axis at the top for MOA values
+        ax2 = ax.twiny()
+        ax2.set_xlim(-max_moa, max_moa)
+        ax2.set_xticks(moa_major_ticks)
+        ax2.set_xlabel('MOA', fontsize=36)  # 3x larger
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
