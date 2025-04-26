@@ -131,6 +131,10 @@ class TestDataModel(QAbstractTableModel):
                         return f"{value:.2f}"
                     elif column_name in ["avg_velocity_fps", "sd_fps", "es_fps"]:
                         return f"{value:.1f}"
+                    elif column_name == "powder_charge_gr":
+                        return f"{value:.2f}"
+                    elif column_name in ["b2o_in", "coal_in"]:
+                        return f"{value:.3f}"
                     else:
                         return str(value)
                 
