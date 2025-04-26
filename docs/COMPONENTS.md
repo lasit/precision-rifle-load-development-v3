@@ -125,6 +125,46 @@ The Create Test module (`pyqt_app/modules/create_test.py`) allows users to creat
 - `create_test()`: Creates a new test file
 - `refresh()`: Refreshes the component dropdown lists
 
+## Wind Plots Module
+
+The Wind Plots module (`pyqt_app/modules/wind_plot.py`) provides tools for creating precision wind drift reference charts. It:
+
+- Creates visual representations of wind drift based on wind speed and direction
+- Supports multiple profiles for different calibers and bullet configurations
+- Allows users to create, edit, and delete profiles
+- Saves profiles to a YAML file for persistence between sessions
+- Generates plots for multiple distances within a profile
+- Visualizes wind drift using colored bars, concentric circles, and angle lines
+- Provides a comprehensive UI for managing profiles and distance/MOA pairs
+- Displays wind drift in Minutes of Angle (MOA) based on wind speed and direction
+- Supports customization of distance/MOA pairs for each profile
+- Handles profile data persistence in a platform-specific location
+
+### Key Classes
+
+- `WindPlotWidget`: Main widget for creating and displaying wind plots
+- `ProfileDialog`: Dialog for creating and editing wind plot profiles
+- `MatplotlibCanvas`: Custom canvas for embedding Matplotlib plots in PyQt
+
+### Key Methods
+
+- `__init__()`: Initializes the widget and sets up the UI
+- `setup_ui()`: Sets up the UI components with profile management and plot tabs
+- `get_profiles_file_path()`: Gets the platform-specific path for the profiles file
+- `load_profiles()`: Loads profiles from the YAML file
+- `save_profiles()`: Saves profiles to the YAML file
+- `populate_profile_dropdown()`: Populates the profile dropdown with available profiles
+- `on_profile_selected()`: Handles profile selection changes
+- `load_current_profile()`: Loads the currently selected profile data
+- `create_new_profile()`: Creates a new profile
+- `edit_current_profile()`: Edits the current profile
+- `delete_current_profile()`: Deletes the current profile
+- `add_input_row()`: Adds a new distance/MOA pair to the input table
+- `remove_input_row()`: Removes a selected distance/MOA pair from the input table
+- `collect_input_data()`: Collects input data from the table and updates the current profile
+- `generate_plots()`: Generates wind drift plots for each distance
+- `draw_wind_plot()`: Draws the wind drift plot on the given canvas
+
 ## Admin Module
 
 The Admin module (`pyqt_app/modules/admin.py`) allows users to manage component lists. It:

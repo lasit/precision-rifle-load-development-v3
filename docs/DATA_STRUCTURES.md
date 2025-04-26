@@ -152,6 +152,49 @@ distances:
   - "500m"
 ```
 
+## Wind Plot Profiles Structure
+
+The wind plot profiles are stored in a YAML file in a platform-specific location:
+
+- Windows: `%APPDATA%\PrecisionRifleLoadDevelopment\wind_plot_profiles.yaml`
+- macOS: `~/Library/Application Support/PrecisionRifleLoadDevelopment/wind_plot_profiles.yaml`
+- Linux: `~/.config/precision-rifle-load-development/wind_plot_profiles.yaml`
+
+The wind plot profiles file has the following structure:
+
+```yaml
+profiles:
+  - name: ".223 Rem 75gr @ 2700fps"
+    description: "Wind drift profile for .223 Remington with 75gr bullets at 2700fps"
+    distances:
+      - distance: 300
+        moa_at_7ms: 3.7
+      - distance: 500
+        moa_at_7ms: 7.8
+      - distance: 700
+        moa_at_7ms: 12.4
+      - distance: 1000
+        moa_at_7ms: 20.0
+  - name: "6.5 Creedmoor 140gr @ 2800fps"
+    description: "Wind drift profile for 6.5 Creedmoor with 140gr bullets at 2800fps"
+    distances:
+      - distance: 300
+        moa_at_7ms: 2.8
+      - distance: 500
+        moa_at_7ms: 5.9
+      - distance: 700
+        moa_at_7ms: 9.2
+      - distance: 1000
+        moa_at_7ms: 15.3
+```
+
+Each profile contains:
+- `name`: A descriptive name for the profile, typically including caliber, bullet weight, and velocity
+- `description`: A longer description of the profile
+- `distances`: A list of distance/MOA pairs, each containing:
+  - `distance`: The distance in meters
+  - `moa_at_7ms`: The MOA drift at 7 m/s wind speed at 90 degrees
+
 ## Settings Structure
 
 The application settings are stored in a YAML file in a platform-specific location:

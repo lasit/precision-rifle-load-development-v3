@@ -32,6 +32,12 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Environment data copy/paste feature allowing users to copy environment data from one test and paste it into another
 - Renamed Component_List.yaml to Lists.yaml for better organization
 - Added Sky (weather) conditions list to Lists.yaml
+- Wind Plots tab for creating precision wind drift reference charts
+- Profile management system for storing multiple wind plot configurations
+- Support for different calibers and bullet configurations in wind plots
+- Persistent storage of wind plot profiles in YAML format
+- Visual representation of wind drift based on wind speed and direction
+- Customizable distance/MOA pairs for each wind plot profile
 
 ### Changed
 - Improved settings management with platform-specific storage locations

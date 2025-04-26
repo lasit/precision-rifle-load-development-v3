@@ -16,6 +16,7 @@ from modules.create_test import CreateTestWidget
 from modules.data_analysis import DataAnalysisWidget
 from modules.view_test import ViewTestWidget
 from modules.admin import AdminWidget
+from modules.wind_plot import WindPlotWidget
 from utils.settings_manager import SettingsManager
 
 
@@ -78,12 +79,14 @@ class MainWindow(QMainWindow):
         self.view_test_widget = ViewTestWidget()
         self.data_analysis_widget = DataAnalysisWidget()
         self.create_test_widget = CreateTestWidget()
+        self.wind_plot_widget = WindPlotWidget()
         self.admin_widget = AdminWidget()  # Use the actual AdminWidget
 
         # Add tabs in the desired order
         self.tabs.addTab(self.view_test_widget, "View Test")
         self.tabs.addTab(self.data_analysis_widget, "Data Analysis")
         self.tabs.addTab(self.create_test_widget, "Create Test")
+        self.tabs.addTab(self.wind_plot_widget, "Wind Plots")
         self.tabs.addTab(self.admin_widget, "Admin")
         
         # Connect signals between widgets
