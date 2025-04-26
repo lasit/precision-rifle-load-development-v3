@@ -38,6 +38,8 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Persistent storage of wind plot profiles in YAML format
 - Visual representation of wind drift based on wind speed and direction
 - Customizable distance/MOA pairs for each wind plot profile
+- Two-column layout in Wind Plots tab for better organization
+- PDF export functionality for wind plots with 2×4 grid layout per page
 
 ### Changed
 - Improved settings management with platform-specific storage locations

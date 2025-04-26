@@ -13,6 +13,9 @@ matplotlib.use('QtAgg')  # Use QtAgg which works with both PyQt5 and PyQt6
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+from PyQt6.QtWidgets import QFileDialog
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
@@ -205,12 +208,17 @@ class WindPlotWidget(QWidget):
         # Create a widget to hold all content
         content_widget = QWidget()
         scroll_area.setWidget(content_widget)
-        content_layout = QVBoxLayout(content_widget)
+        
+        # Create a two-column layout
+        content_layout = QHBoxLayout(content_widget)
+        
+        # Left column for profile management and distance parameters
+        left_column = QVBoxLayout()
         
         # Add header
         header_label = QLabel("Wind Drift Plot Generator")
         header_label.setStyleSheet("font-size: 16px; font-weight: bold;")
-        content_layout.addWidget(header_label)
+        left_column.addWidget(header_label)
         
         # Add description
         description_text = (
@@ -220,7 +228,7 @@ class WindPlotWidget(QWidget):
         )
         description_label = QLabel(description_text)
         description_label.setWordWrap(True)
-        content_layout.addWidget(description_label)
+        left_column.addWidget(description_label)
         
         # Profile selection section
         profile_section = QGroupBox("Profile Management")
@@ -258,7 +266,13 @@ class WindPlotWidget(QWidget):
         self.profile_description.setStyleSheet("font-style: italic;")
         profile_layout.addWidget(self.profile_description)
         
-        content_layout.addWidget(profile_section)
+        # Add PDF export button
+        pdf_button = QPushButton("Export to PDF")
+        pdf_button.clicked.connect(self.export_to_pdf)
+        pdf_button.setStyleSheet("font-weight: bold; padding: 8px;")
+        profile_layout.addWidget(pdf_button)
+        
+        left_column.addWidget(profile_section)
         
         # Create input section
         input_section = QGroupBox("Distance Parameters")
@@ -289,11 +303,21 @@ class WindPlotWidget(QWidget):
         generate_button.setStyleSheet("font-weight: bold; padding: 8px;")
         input_layout.addWidget(generate_button)
         
-        content_layout.addWidget(input_section)
+        left_column.addWidget(input_section)
+        
+        # Add a spacer to push everything to the top
+        left_column.addStretch()
+        
+        # Right column for plots
+        right_column = QVBoxLayout()
         
         # Create tabs for plots
         self.plot_tabs = QTabWidget()
-        content_layout.addWidget(self.plot_tabs)
+        right_column.addWidget(self.plot_tabs)
+        
+        # Add columns to the main layout with appropriate sizing
+        content_layout.addLayout(left_column, 1)  # 1/3 of the width
+        content_layout.addLayout(right_column, 2)  # 2/3 of the width
     
     def populate_profile_dropdown(self):
         """Populate the profile dropdown with available profiles"""
@@ -545,6 +569,168 @@ class WindPlotWidget(QWidget):
         # Switch to the first tab
         if self.plot_tabs.count() > 0:
             self.plot_tabs.setCurrentIndex(0)
+    
+    def export_to_pdf(self):
+        """Export the wind plots to a PDF file"""
+        # Check if there are any distances in the current profile
+        if not self.profiles or not self.profiles[self.current_profile_index]["distances"]:
+            QMessageBox.warning(self, "No Data", "Please add at least one distance to the profile before exporting to PDF.")
+            return
+        
+        # Get the file path from the user
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save PDF",
+            "",
+            "PDF Files (*.pdf)"
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        # Add .pdf extension if not present
+        if not file_path.lower().endswith('.pdf'):
+            file_path += '.pdf'
+        
+        try:
+            # Collect input data
+            distances, moa_values = self.collect_input_data()
+            if not distances or not moa_values:
+                return
+            
+            # Sort distances
+            distances.sort()
+            
+            # Get the profile name
+            profile_name = self.profiles[self.current_profile_index]["name"]
+            
+            # Create a PDF with the plots
+            with PdfPages(file_path) as pdf:
+                # Calculate how many pages we need
+                plots_per_page = 8  # 2 columns x 4 rows
+                num_pages = (len(distances) + plots_per_page - 1) // plots_per_page
+                
+                for page in range(num_pages):
+                    # Create a figure with 4 rows and 2 columns
+                    fig, axes = plt.subplots(4, 2, figsize=(11, 17))  # A4 size in inches (portrait)
+                    
+                    # Flatten the axes array for easier indexing
+                    axes = axes.flatten()
+                    
+                    # Add a title to the page
+                    fig.suptitle(f"Wind Drift Charts - {profile_name}", fontsize=16)
+                    
+                    # Add plots to the page
+                    for i in range(plots_per_page):
+                        plot_index = page * plots_per_page + i
+                        
+                        if plot_index < len(distances):
+                            distance = distances[plot_index]
+                            moa_drift = moa_values[distance]
+                            
+                            # Draw the plot on the current axis
+                            self.draw_wind_plot_on_axis(axes[i], distance, moa_drift)
+                        else:
+                            # Hide unused axes
+                            axes[i].axis('off')
+                    
+                    # Adjust layout
+                    plt.tight_layout(rect=[0, 0, 1, 0.97])  # Leave room for the title
+                    
+                    # Add the page to the PDF
+                    pdf.savefig(fig)
+                    plt.close(fig)
+            
+            QMessageBox.information(self, "PDF Exported", f"Wind plots exported to {file_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to export PDF: {e}")
+    
+    def draw_wind_plot_on_axis(self, ax, distance, moa_drift_at_7ms):
+        """Draw the wind drift plot on the given axis (for PDF export)"""
+        # Set aspect equal
+        ax.set_aspect('equal')
+        
+        # === CONFIGURATION ===
+        max_speed = 8  # wind speed in m/s (horizontal axis goes from -8 to +8)
+        num_circles = 7  # number of concentric wind speed arcs (one per m/s, up to 7 m/s)
+        moa_bar_width = 0.25  # MOA increment width for alternating colour bars (4 bars = 1 MOA)
+        
+        # === DERIVED PARAMETERS ===
+        moa_to_x = max_speed / moa_drift_at_7ms  # conversion factor: how many m/s per MOA
+        x_to_moa = 1 / moa_to_x  # inverse: how many MOA per m/s
+        
+        # Calculate the maximum number of MOA ticks needed
+        max_moa = int(np.ceil(max_speed * x_to_moa))
+        
+        # Generate MOA positions for vertical lines (at each full MOA)
+        moa_major_ticks = np.arange(-max_moa, max_moa + 1, 1)
+        moa_major_positions = moa_major_ticks * moa_to_x
+        
+        # Generate positions for colored bars (4 bars per MOA)
+        bar_positions = []
+        for moa in np.arange(-max_moa, max_moa + 1, 0.25):
+            bar_positions.append(moa * moa_to_x)
+        
+        # === DRAW COLOURED BACKGROUND BARS ===
+        for i in range(len(bar_positions) - 1):
+            start_x = bar_positions[i]
+            end_x = bar_positions[i + 1]
+            color = 'green' if i % 2 == 0 else 'yellow'
+            ax.fill_between([start_x, end_x], 0, max_speed, color=color, alpha=0.3)
+        
+        # === DRAW BOLD LINES FOR EACH FULL MOA ===
+        for x in moa_major_positions:
+            ax.plot([x, x], [0, max_speed], color='black', lw=1.2)
+        
+        # === DRAW SEMI-CIRCLES FOR WIND SPEED MAGNITUDES ===
+        theta = np.linspace(0, np.pi, 300)
+        for r in range(1, num_circles + 1):
+            x = r * np.cos(theta)
+            y = r * np.sin(theta)
+            ax.plot(x, y, color='red', lw=1)
+        
+        # === DRAW WIND ANGLE LINES AND LABELS (0° to 90° and mirrored) ===
+        angles_deg = [0, 15, 30, 45, 60, 75, 90]
+        angles_rad = np.deg2rad(angles_deg)
+        for angle_deg, angle_rad in zip(angles_deg, angles_rad):
+            label = f"{90 - angle_deg}°"
+            # Use 7 m/s for the angle lines to match the circles
+            angle_line_length = 7
+            # Right side
+            x_r = angle_line_length * np.cos(angle_rad)
+            y_r = angle_line_length * np.sin(angle_rad)
+            ax.plot([0, x_r], [0, y_r], color='red', lw=1)
+            ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=7)
+            # Left side (mirror)
+            x_l = -x_r
+            ax.plot([0, x_l], [0, y_r], color='red', lw=1)
+            ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=7)
+        
+        # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
+        for x in bar_positions:
+            ax.plot([x, x], [0, -0.4], color='black', lw=1)
+        
+        # === LABEL THE MOA SCALE BELOW THE X-AXIS ===
+        for moa in moa_major_ticks:
+            x = moa * moa_to_x
+            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=7)
+        
+        # === AXIS SETTINGS ===
+        ax.set_xlim(-max_speed, max_speed)
+        ax.set_ylim(-1, max_speed)
+        ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
+        ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
+        ax.set_xlabel('Wind Speed (m/s)', fontsize=8)
+        ax.set_ylabel('Wind Speed (m/s)', fontsize=8)
+        
+        # === MAIN AXIS LINES ===
+        ax.axhline(0, color='black', lw=1)
+        ax.axvline(0, color='black', lw=1)
+        
+        # === FINAL FORMATTING ===
+        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.set_title(f'Wind Drift Chart for {distance}m\n7 m/s at 90° = {moa_drift_at_7ms} MOA', fontsize=10)
     
     def draw_wind_plot(self, canvas, distance, moa_drift_at_7ms):
         """Draw the wind drift plot on the given canvas"""

@@ -139,6 +139,8 @@ The Wind Plots module (`pyqt_app/modules/wind_plot.py`) provides tools for creat
 - Displays wind drift in Minutes of Angle (MOA) based on wind speed and direction
 - Supports customization of distance/MOA pairs for each profile
 - Handles profile data persistence in a platform-specific location
+- Features a two-column layout with profile management and distance parameters on the left, and plots on the right
+- Provides PDF export functionality that generates a PDF with plots arranged in a 2×4 grid per page
 
 ### Key Classes
 

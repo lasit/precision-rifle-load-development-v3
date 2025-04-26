@@ -195,6 +195,8 @@ Each profile contains:
   - `distance`: The distance in meters
   - `moa_at_7ms`: The MOA drift at 7 m/s wind speed at 90 degrees
 
+The profiles can be exported to PDF format, with plots arranged in a 2×4 grid per page (2 columns, 4 rows). The PDF export functionality uses matplotlib's PdfPages to create multi-page PDFs with consistent formatting.
+
 ## Settings Structure
 
 The application settings are stored in a YAML file in a platform-specific location:
