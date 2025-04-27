@@ -696,6 +696,9 @@ class WindPlotWidget(QWidget):
             x = r * np.cos(theta)
             y = r * np.sin(theta)
             ax.plot(x, y, color='red', lw=1)
+            
+        # Add the missing radius at 0 degrees (vertical line along the Y-axis)
+        ax.plot([0, 0], [0, 7], color='red', lw=1)
         
         # === DRAW WIND ANGLE LINES AND LABELS (0° to 90° and mirrored) ===
         angles_deg = [0, 15, 30, 45, 60, 75, 90]
@@ -770,8 +773,16 @@ class WindPlotWidget(QWidget):
         ax.set_ylim(-1, max_speed)
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
-        ax.set_xlabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
-        # Remove Y-axis label
+        ax.set_xlabel('Wind Speed (m/s)', fontsize=24, color='red')  # 3x larger and red
+        # Remove Y-axis label and tick labels
+        ax.tick_params(axis='y', labelleft=False)  # Hide Y-axis tick labels
+        
+        # Make wind speed tick labels red and slightly larger (but not too big)
+        ax.tick_params(axis='x', labelsize=18, labelcolor='red')
+        
+        # Make tick labels bold by setting the font properties
+        for label in ax.get_xticklabels():
+            label.set_fontweight('bold')
         
         # Manually add MOA labels at the top of the plot
         for moa in moa_major_ticks:
@@ -782,11 +793,15 @@ class WindPlotWidget(QWidget):
         ax.text(0, max_speed + 1.2, 'MOA', ha='center', va='bottom', fontsize=18)
         
         # === MAIN AXIS LINES ===
-        ax.axhline(0, color='black', lw=1)
-        ax.axvline(0, color='black', lw=1)
+        ax.axhline(0, color='red', lw=2)  # Horizontal axis line (X-axis) in red and thicker
+        ax.axvline(0, color='black', lw=1)  # Vertical axis line (Y-axis) remains black
+        
+        # Add the missing radius at 0 degrees (vertical line along the Y-axis)
+        # Draw it at the end to ensure it's on top of other elements
+        ax.plot([0, 0], [0, 7], color='red', lw=2, zorder=10)  # Thicker line with higher z-order
         
         # === FINAL FORMATTING ===
-        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.grid(False)  # Remove the grid
         ax.set_title(f'Wind Drift Chart for {distance}m\n7 m/s at 90° = {moa_drift_at_7ms} MOA', fontsize=10)
     
     def export_to_pdf_2_per_page(self):
@@ -994,8 +1009,16 @@ class WindPlotWidget(QWidget):
         ax.set_ylim(-1, max_speed)
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
-        ax.set_xlabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
-        # Remove Y-axis label
+        ax.set_xlabel('Wind Speed (m/s)', fontsize=36, color='red')  # 3x larger and red
+        # Remove Y-axis label and tick labels
+        ax.tick_params(axis='y', labelleft=False)  # Hide Y-axis tick labels
+        
+        # Make wind speed tick labels red and slightly larger (but not too big)
+        ax.tick_params(axis='x', labelsize=18, labelcolor='red')
+        
+        # Make tick labels bold by setting the font properties
+        for label in ax.get_xticklabels():
+            label.set_fontweight('bold')
         
         # Manually add MOA labels at the top of the plot
         for moa in moa_major_ticks:
@@ -1006,11 +1029,15 @@ class WindPlotWidget(QWidget):
         ax.text(0, max_speed + 1.2, 'MOA', ha='center', va='bottom', fontsize=18)
         
         # === MAIN AXIS LINES ===
-        ax.axhline(0, color='black', lw=1)
-        ax.axvline(0, color='black', lw=1)
+        ax.axhline(0, color='red', lw=2)  # Horizontal axis line (X-axis) in red and thicker
+        ax.axvline(0, color='black', lw=1)  # Vertical axis line (Y-axis) remains black
+        
+        # Add the missing radius at 0 degrees (vertical line along the Y-axis)
+        # Draw it at the end to ensure it's on top of other elements
+        ax.plot([0, 0], [0, 7], color='red', lw=2, zorder=10)  # Thicker line with higher z-order
         
         # === FINAL FORMATTING ===
-        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.grid(False)  # Remove the grid
         ax.set_title(f'Wind Drift Reference Chart for {distance}m\n7 m/s at 90° = {moa_drift_at_7ms} MOA', fontsize=13)
         
         # Update the canvas
