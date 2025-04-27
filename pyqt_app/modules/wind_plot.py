@@ -700,18 +700,18 @@ class WindPlotWidget(QWidget):
         angles_rad = np.deg2rad(angles_deg)
         
         # Clock time equivalents - angles are in the angles_deg array, so we need to map to the corresponding clock times
-        # For right side (positive X axis): 30° = 01:00, 60° = 02:00, 90° = 03:00
-        # For left side (negative X axis): 30° = 11:00, 60° = 10:00, 90° = 09:00
+        # For right side (positive X axis): 30° = 01:00, 60° = 02:00, 90° = 09:00
+        # For left side (negative X axis): 30° = 11:00, 60° = 10:00, 90° = 03:00
         clock_times_right = {
             30: "01:00",
             60: "02:00",
-            90: "03:00"
+            90: "09:00"
         }
         
         clock_times_left = {
             30: "11:00",
             60: "10:00",
-            90: "09:00"
+            90: "03:00"
         }
         
         for angle_deg, angle_rad in zip(angles_deg, angles_rad):
@@ -727,26 +727,32 @@ class WindPlotWidget(QWidget):
             x_l = -x_r
             ax.plot([0, x_l], [0, y_r], color='red', lw=1)
             
-            # Degree labels - show 0° only once at the top
+            # Degree labels
             label = f"{90 - angle_deg}°"
             
-            if angle_deg == 0:
-                # For 0° (90° on our label), only show at the top (y-axis)
-                ax.text(0, 7.2, label, ha='center', va='bottom', fontsize=14, weight='bold')
-            else:
-                # For all other angles, show on both sides
-                ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=14, weight='bold')
-                ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=14, weight='bold')
+            # For all angles, show on both sides
+            ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=14, weight='bold')
+            ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=14, weight='bold')
+            
+            # Clock time labels for specific angles (only for 30° and 60°)
+            if angle_deg in [30, 60]:
+                # Right side clock time
+                ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
+                        ha='left', va='bottom', fontsize=14, weight='bold', color='blue')
                 
-                # Clock time labels for specific angles
-                if angle_deg in clock_times_right:
-                    # Right side clock time
-                    ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
-                            ha='left', va='bottom', fontsize=14, weight='bold', color='blue')
-                    
-                    # Left side clock time
-                    ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
-                            ha='right', va='bottom', fontsize=14, weight='bold', color='blue')
+                # Left side clock time
+                ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
+                        ha='right', va='bottom', fontsize=14, weight='bold', color='blue')
+            
+            # Special case for 90° - place clock times at the extremities of the X-axis
+            if angle_deg == 90:
+                # Right side (East) - 03:00
+                ax.text(7, 0.2, "03:00", 
+                        ha='center', va='bottom', fontsize=14, weight='bold', color='blue')
+                
+                # Left side (West) - 09:00
+                ax.text(-7, 0.2, "09:00", 
+                        ha='center', va='bottom', fontsize=14, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
         for x in bar_positions:
@@ -941,26 +947,32 @@ class WindPlotWidget(QWidget):
             x_l = -x_r
             ax.plot([0, x_l], [0, y_r], color='red', lw=1)
             
-            # Degree labels - show 0° only once at the top
+            # Degree labels
             label = f"{90 - angle_deg}°"
             
-            if angle_deg == 0:
-                # For 0° (90° on our label), only show at the top (y-axis)
-                ax.text(0, 7.2, label, ha='center', va='bottom', fontsize=18, weight='bold')
-            else:
-                # For all other angles, show on both sides
-                ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=18, weight='bold')
-                ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=18, weight='bold')
+            # For all angles, show on both sides
+            ax.text(x_r * 1.05, y_r * 1.05, label, ha='left', va='bottom', fontsize=18, weight='bold')
+            ax.text(x_l * 1.05, y_r * 1.05, label, ha='right', va='bottom', fontsize=18, weight='bold')
+            
+            # Clock time labels for specific angles (only for 30° and 60°)
+            if angle_deg in [30, 60]:
+                # Right side clock time
+                ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
+                        ha='left', va='bottom', fontsize=18, weight='bold', color='blue')
                 
-                # Clock time labels for specific angles
-                if angle_deg in clock_times_right:
-                    # Right side clock time
-                    ax.text(x_r * 1.05, y_r * 1.05 + 0.5, clock_times_right[angle_deg], 
-                            ha='left', va='bottom', fontsize=18, weight='bold', color='blue')
-                    
-                    # Left side clock time
-                    ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
-                            ha='right', va='bottom', fontsize=18, weight='bold', color='blue')
+                # Left side clock time
+                ax.text(x_l * 1.05, y_r * 1.05 + 0.5, clock_times_left[angle_deg], 
+                        ha='right', va='bottom', fontsize=18, weight='bold', color='blue')
+            
+            # Special case for 90° - place clock times at the extremities of the X-axis
+            if angle_deg == 90:
+                # Right side (East) - 03:00
+                ax.text(7, 0.2, "03:00", 
+                        ha='center', va='bottom', fontsize=18, weight='bold', color='blue')
+                
+                # Left side (West) - 09:00
+                ax.text(-7, 0.2, "09:00", 
+                        ha='center', va='bottom', fontsize=18, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
         for x in bar_positions:
