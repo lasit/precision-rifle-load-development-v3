@@ -178,6 +178,20 @@ class ViewTestWidget(QWidget):
         # Variable to store copied environment data
         self.copied_env_data = None
         
+        # Flag to temporarily disable auto-ranging when filters are being applied
+        self.disable_auto_range = False
+        
+        # Configuration for auto-range filters
+        # Format: {
+        #   'column_name': {
+        #     'type': 'date' or 'numeric',
+        #     'min_widget': reference to min widget,
+        #     'max_widget': reference to max widget,
+        #     'enabled': True/False
+        #   }
+        # }
+        self.auto_range_filters = {}
+        
         # Load component lists
         self.component_lists = self.load_component_lists()
 
@@ -218,12 +232,12 @@ class ViewTestWidget(QWidget):
         self.date_from = QDateEdit()
         self.date_from.setCalendarPopup(True)
         self.date_from.setDisplayFormat("yyyy-MM-dd")
-        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
+        # We'll set the actual date range after loading data
         
         self.date_to = QDateEdit()
         self.date_to.setCalendarPopup(True)
         self.date_to.setDisplayFormat("yyyy-MM-dd")
-        self.date_to.setDate(QDate.currentDate())  # Default to today
+        # We'll set the actual date range after loading data
         
         date_layout = QHBoxLayout()
         date_layout.addWidget(self.date_from)
@@ -641,6 +655,65 @@ class ViewTestWidget(QWidget):
         self.populate_test_ids()
         self.refresh_component_lists()
         
+    def register_auto_range_filter(self, column_name, filter_type, min_widget, max_widget, enabled=True):
+        """Register a filter for auto-ranging
+        
+        Args:
+            column_name (str): The name of the column in the dataframe
+            filter_type (str): The type of filter ('date' or 'numeric')
+            min_widget: The widget for the minimum value
+            max_widget: The widget for the maximum value
+            enabled (bool): Whether auto-ranging is enabled for this filter
+        """
+        self.auto_range_filters[column_name] = {
+            'type': filter_type,
+            'min_widget': min_widget,
+            'max_widget': max_widget,
+            'enabled': enabled
+        }
+    
+    def update_filter_ranges(self, df):
+        """Update filter ranges based on the current filtered data
+        
+        Args:
+            df (DataFrame): The dataframe to use for calculating ranges
+        """
+        if self.disable_auto_range or df.empty:
+            return
+        
+        for column_name, filter_config in self.auto_range_filters.items():
+            if not filter_config['enabled'] or column_name not in df.columns:
+                continue
+            
+            # Get min and max values from the dataframe
+            try:
+                if filter_config['type'] == 'date':
+                    # For date filters
+                    min_date = df[column_name].min()
+                    max_date = df[column_name].max()
+                    
+                    if pd.notna(min_date) and pd.notna(max_date):
+                        # Convert to QDate
+                        min_qdate = QDate.fromString(min_date, "yyyy-MM-dd")
+                        max_qdate = QDate.fromString(max_date, "yyyy-MM-dd")
+                        
+                        # Update the widgets
+                        filter_config['min_widget'].setDate(min_qdate)
+                        filter_config['max_widget'].setDate(max_qdate)
+                
+                elif filter_config['type'] == 'numeric':
+                    # For numeric filters
+                    min_value = df[column_name].min()
+                    max_value = df[column_name].max()
+                    
+                    if pd.notna(min_value) and pd.notna(max_value):
+                        # Update the widgets
+                        filter_config['min_widget'].setText(str(min_value))
+                        filter_config['max_widget'].setText(str(max_value))
+            
+            except Exception as e:
+                print(f"Error updating filter range for {column_name}: {e}")
+    
     def load_data(self):
         """Load test data from files"""
         try:
@@ -691,7 +764,22 @@ class ViewTestWidget(QWidget):
                 "es_fps": [25.0, 22.5]
             })
         
+        # Print debug info about date range in the data
+        if 'date' in self.all_data.columns:
+            min_date = self.all_data['date'].min()
+            max_date = self.all_data['date'].max()
+            print(f"DEBUG: All data date range: {min_date} to {max_date}")
+        
+        # Make a copy of the data for filtering
         self.filtered_data = self.all_data.copy()
+        
+        # Register auto-range filters BEFORE updating the UI
+        self.register_auto_range_filter('date', 'date', self.date_from, self.date_to, True)
+        
+        # Update filter ranges based on the FULL dataset
+        # This ensures the date range reflects ALL available data
+        self.disable_auto_range = False  # Make sure auto-range is enabled
+        self.update_filter_ranges(self.all_data)  # Use all_data, not filtered_data
         
         # Update the table model
         self.test_model.update_data(self.filtered_data)
@@ -738,25 +826,16 @@ class ViewTestWidget(QWidget):
         """Apply filters to the data"""
         filtered_df = self.all_data.copy()
         
-        # Apply date range filter
+        # Flag to track if we should apply date filter
+        apply_date_filter = True
+        
+        # Store date filter values for later use
         try:
-            # Get dates from QDateEdit widgets
             from_date = self.date_from.date().toString("yyyy-MM-dd")
             to_date = self.date_to.date().toString("yyyy-MM-dd")
-            
-            # Check if the column exists in the dataframe
-            if "date" in filtered_df.columns:
-                # Handle NaN values by creating a mask that excludes them
-                mask = filtered_df["date"].notna()
-                mask = mask & (filtered_df["date"] >= from_date)
-                mask = mask & (filtered_df["date"] <= to_date)
-                
-                # Apply the mask to filter the dataframe
-                filtered_df = filtered_df[mask]
-            else:
-                print("Warning: 'date' column not found in the data")
         except Exception as e:
-            print(f"Error applying date filter: {e}")
+            print(f"Error getting date filter values: {e}")
+            apply_date_filter = False
         
         # Apply distance filter
         if self.distance_filter_combo.currentText() != "All":
@@ -1026,6 +1105,26 @@ class ViewTestWidget(QWidget):
             except Exception as e:
                 print(f"Error applying ES Velocity filter: {e}")
         
+        # At this point, all non-date filters have been applied
+        # Update the auto-range filters based on the current filtered data
+        # This will update the date range filter to show the min/max dates in the filtered data
+        self.disable_auto_range = True
+        self.update_filter_ranges(filtered_df)
+        self.disable_auto_range = False
+        
+        # Now apply the date filter if needed
+        if apply_date_filter and "date" in filtered_df.columns:
+            try:
+                # Handle NaN values by creating a mask that excludes them
+                mask = filtered_df["date"].notna()
+                mask = mask & (filtered_df["date"] >= from_date)
+                mask = mask & (filtered_df["date"] <= to_date)
+                
+                # Apply the mask to filter the dataframe
+                filtered_df = filtered_df[mask]
+            except Exception as e:
+                print(f"Error applying date filter: {e}")
+        
         # Update filtered data
         self.filtered_data = filtered_df
         
@@ -1034,6 +1133,12 @@ class ViewTestWidget(QWidget):
         
         # Update result count
         self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Update auto-range filters based on the filtered data
+        # Temporarily disable auto-ranging to prevent infinite recursion
+        self.disable_auto_range = True
+        self.update_filter_ranges(self.filtered_data)
+        self.disable_auto_range = False
     
     def _save_current_filters(self):
         """Save current filter values to a dictionary"""
@@ -1136,16 +1241,18 @@ class ViewTestWidget(QWidget):
     
     def reset_filters(self):
         """Reset all filters to their default values"""
+        # Print debug info before reset
+        if 'date' in self.all_data.columns:
+            min_date = self.all_data['date'].min()
+            max_date = self.all_data['date'].max()
+            print(f"DEBUG: Before reset - All data date range: {min_date} to {max_date}")
+        
         # Reset dropdowns
         self.calibre_filter_combo.setCurrentIndex(0)
         self.rifle_filter_combo.setCurrentIndex(0)
         self.bullet_brand_filter_combo.setCurrentIndex(0)
         self.powder_brand_filter_combo.setCurrentIndex(0)
         self.distance_filter_combo.setCurrentIndex(0)
-        
-        # Reset date inputs to default values
-        self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
-        self.date_to.setDate(QDate.currentDate())  # Default to today
         
         # Reset Ammunition filters
         self.bullet_weight_min.clear()
@@ -1175,8 +1282,25 @@ class ViewTestWidget(QWidget):
         self.es_velocity_min.clear()
         self.es_velocity_max.clear()
         
-        # Apply filters (which will now show all data)
-        self.apply_filters()
+        # Reset filtered data to all data
+        self.filtered_data = self.all_data.copy()
+        
+        # Update the table model
+        self.test_model.update_data(self.filtered_data)
+        
+        # Update result count
+        self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Update date range based on the FULL dataset
+        # This ensures the date range reflects ALL available data
+        self.disable_auto_range = False  # Make sure auto-range is enabled
+        self.update_filter_ranges(self.all_data)  # Use all_data, not filtered_data
+        
+        # Print debug info after reset
+        if 'date' in self.all_data.columns:
+            min_date = self.date_from.date().toString("yyyy-MM-dd")
+            max_date = self.date_to.date().toString("yyyy-MM-dd")
+            print(f"DEBUG: After reset - Date filter set to: {min_date} to {max_date}")
     
     def on_table_selection_changed(self, selected, deselected):
         """Handle selection changes in the table view"""
