@@ -662,7 +662,9 @@ class WindPlotWidget(QWidget):
         moa_bar_width = 0.25  # MOA increment width for alternating colour bars (4 bars = 1 MOA)
         
         # === DERIVED PARAMETERS ===
-        moa_to_x = max_speed / moa_drift_at_7ms  # conversion factor: how many m/s per MOA
+        # Use exactly 7 m/s for the conversion factor to ensure proper alignment
+        # This ensures that at exactly 7 m/s wind speed, the MOA value matches the input value
+        moa_to_x = 7 / moa_drift_at_7ms  # conversion factor: how many m/s per MOA
         x_to_moa = 1 / moa_to_x  # inverse: how many MOA per m/s
         
         # Calculate the maximum number of MOA ticks needed
@@ -761,7 +763,7 @@ class WindPlotWidget(QWidget):
         # === LABEL THE MOA SCALE BELOW THE X-AXIS ===
         for moa in moa_major_ticks:
             x = moa * moa_to_x
-            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=21)  # 3x larger
+            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=12)  # Reduced by 50%
         
         # === AXIS SETTINGS ===
         ax.set_xlim(-max_speed, max_speed)
@@ -775,9 +777,9 @@ class WindPlotWidget(QWidget):
         ax2 = ax.twiny()
         ax2.set_xlim(-max_moa, max_moa)
         ax2.set_xticks(moa_major_ticks)
-        ax2.set_xlabel('MOA', fontsize=36)  # Make even larger
+        ax2.set_xlabel('MOA', fontsize=18)  # Reduced by 50%
         # Make tick labels larger
-        ax2.tick_params(axis='x', labelsize=24)
+        ax2.tick_params(axis='x', labelsize=12)  # Reduced by 50%
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
@@ -878,7 +880,9 @@ class WindPlotWidget(QWidget):
         moa_bar_width = 0.25  # MOA increment width for alternating colour bars (4 bars = 1 MOA)
         
         # === DERIVED PARAMETERS ===
-        moa_to_x = max_speed / moa_drift_at_7ms  # conversion factor: how many m/s per MOA
+        # Use exactly 7 m/s for the conversion factor to ensure proper alignment
+        # This ensures that at exactly 7 m/s wind speed, the MOA value matches the input value
+        moa_to_x = 7 / moa_drift_at_7ms  # conversion factor: how many m/s per MOA
         x_to_moa = 1 / moa_to_x  # inverse: how many MOA per m/s
         
         # Calculate the width of one MOA in the x-axis units (m/s)
@@ -983,7 +987,7 @@ class WindPlotWidget(QWidget):
         # === LABEL THE MOA SCALE BELOW THE X-AXIS ===
         for moa in moa_major_ticks:
             x = moa * moa_to_x
-            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=24)  # 3x larger
+            ax.text(x, -0.6, f"{moa:.0f}", ha='center', va='top', fontsize=12)  # Reduced by 50%
         
         # === AXIS SETTINGS ===
         ax.set_xlim(-max_speed, max_speed)
@@ -997,9 +1001,9 @@ class WindPlotWidget(QWidget):
         ax2 = ax.twiny()
         ax2.set_xlim(-max_moa, max_moa)
         ax2.set_xticks(moa_major_ticks)
-        ax2.set_xlabel('MOA', fontsize=36)  # 3x larger
+        ax2.set_xlabel('MOA', fontsize=18)  # Reduced by 50%
         # Make tick labels larger
-        ax2.tick_params(axis='x', labelsize=24)
+        ax2.tick_params(axis='x', labelsize=12)  # Reduced by 50%
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
