@@ -773,13 +773,13 @@ class WindPlotWidget(QWidget):
         ax.set_xlabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
         # Remove Y-axis label
         
-        # Add a secondary x-axis at the top for MOA values
-        ax2 = ax.twiny()
-        ax2.set_xlim(-max_moa, max_moa)
-        ax2.set_xticks(moa_major_ticks)
-        ax2.set_xlabel('MOA', fontsize=18)  # Reduced by 50%
-        # Make tick labels larger
-        ax2.tick_params(axis='x', labelsize=12)  # Reduced by 50%
+        # Manually add MOA labels at the top of the plot
+        for moa in moa_major_ticks:
+            x = moa * moa_to_x
+            ax.text(x, max_speed + 0.6, f"{moa:.0f}", ha='center', va='bottom', fontsize=12)
+        
+        # Add "MOA" label at the top center
+        ax.text(0, max_speed + 1.2, 'MOA', ha='center', va='bottom', fontsize=18)
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
@@ -997,13 +997,13 @@ class WindPlotWidget(QWidget):
         ax.set_xlabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
         # Remove Y-axis label
         
-        # Add a secondary x-axis at the top for MOA values
-        ax2 = ax.twiny()
-        ax2.set_xlim(-max_moa, max_moa)
-        ax2.set_xticks(moa_major_ticks)
-        ax2.set_xlabel('MOA', fontsize=18)  # Reduced by 50%
-        # Make tick labels larger
-        ax2.tick_params(axis='x', labelsize=12)  # Reduced by 50%
+        # Manually add MOA labels at the top of the plot
+        for moa in moa_major_ticks:
+            x = moa * moa_to_x
+            ax.text(x, max_speed + 0.6, f"{moa:.0f}", ha='center', va='bottom', fontsize=12)
+        
+        # Add "MOA" label at the top center
+        ax.text(0, max_speed + 1.2, 'MOA', ha='center', va='bottom', fontsize=18)
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
