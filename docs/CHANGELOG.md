@@ -40,6 +40,9 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Customizable distance/MOA pairs for each wind plot profile
 - Two-column layout in Wind Plots tab for better organization
 - PDF export functionality for wind plots with 2×4 grid layout per page
+- Improved Wind Plots with correct clock time labels (03:00, 09:00, etc.)
+- Enhanced axis labels and removed redundant Y-axis label in Wind Plots
+- Increased font sizes for better readability in Wind Plots
 
 ### Changed
 - Improved settings management with platform-specific storage locations

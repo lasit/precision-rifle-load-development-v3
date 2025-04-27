@@ -700,18 +700,18 @@ class WindPlotWidget(QWidget):
         angles_rad = np.deg2rad(angles_deg)
         
         # Clock time equivalents - angles are in the angles_deg array, so we need to map to the corresponding clock times
-        # For right side (positive X axis): 30° = 01:00, 60° = 02:00, 90° = 09:00
-        # For left side (negative X axis): 30° = 11:00, 60° = 10:00, 90° = 03:00
+        # For right side (positive X axis): 30° = 02:00, 60° = 01:00, 90° = 03:00
+        # For left side (negative X axis): 30° = 10:00, 60° = 11:00, 90° = 09:00
         clock_times_right = {
-            30: "01:00",
-            60: "02:00",
-            90: "09:00"
+            30: "02:00",
+            60: "01:00",
+            90: "03:00"
         }
         
         clock_times_left = {
-            30: "11:00",
-            60: "10:00",
-            90: "03:00"
+            30: "10:00",
+            60: "11:00",
+            90: "09:00"
         }
         
         for angle_deg, angle_rad in zip(angles_deg, angles_rad):
@@ -747,11 +747,11 @@ class WindPlotWidget(QWidget):
             # Special case for 90° - place clock times at the extremities of the X-axis
             if angle_deg == 90:
                 # Right side (East) - 03:00
-                ax.text(7, 0.2, "03:00", 
+                ax.text(7.8, 0.8, "03:00", 
                         ha='center', va='bottom', fontsize=14, weight='bold', color='blue')
                 
                 # Left side (West) - 09:00
-                ax.text(-7, 0.2, "09:00", 
+                ax.text(-7.8, 0.8, "09:00", 
                         ha='center', va='bottom', fontsize=14, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
@@ -769,13 +769,15 @@ class WindPlotWidget(QWidget):
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
         ax.set_xlabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
-        ax.set_ylabel('Wind Speed (m/s)', fontsize=24)  # 3x larger
+        # Remove Y-axis label
         
         # Add a secondary x-axis at the top for MOA values
         ax2 = ax.twiny()
         ax2.set_xlim(-max_moa, max_moa)
         ax2.set_xticks(moa_major_ticks)
-        ax2.set_xlabel('MOA', fontsize=24)  # 3x larger
+        ax2.set_xlabel('MOA', fontsize=36)  # Make even larger
+        # Make tick labels larger
+        ax2.tick_params(axis='x', labelsize=24)
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)
@@ -923,14 +925,14 @@ class WindPlotWidget(QWidget):
         
         # Clock time equivalents
         clock_times_right = {
-            30: "01:00",
-            60: "02:00",
+            30: "02:00",
+            60: "01:00",
             90: "03:00"
         }
         
         clock_times_left = {
-            30: "11:00",
-            60: "10:00",
+            30: "10:00",
+            60: "11:00",
             90: "09:00"
         }
         
@@ -967,11 +969,11 @@ class WindPlotWidget(QWidget):
             # Special case for 90° - place clock times at the extremities of the X-axis
             if angle_deg == 90:
                 # Right side (East) - 03:00
-                ax.text(7, 0.2, "03:00", 
+                ax.text(7.8, 0.8, "03:00", 
                         ha='center', va='bottom', fontsize=18, weight='bold', color='blue')
                 
                 # Left side (West) - 09:00
-                ax.text(-7, 0.2, "09:00", 
+                ax.text(-7.8, 0.8, "09:00", 
                         ha='center', va='bottom', fontsize=18, weight='bold', color='blue')
         
         # === DRAW SHORT TICK MARKS EVERY 0.25 MOA ===
@@ -989,13 +991,15 @@ class WindPlotWidget(QWidget):
         ax.set_xticks(np.arange(-max_speed, max_speed + 1, 1))  # wind speed ticks
         ax.set_yticks(np.arange(0, max_speed + 1, 1))           # wind magnitude (y-axis)
         ax.set_xlabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
-        ax.set_ylabel('Wind Speed (m/s)', fontsize=36)  # 3x larger
+        # Remove Y-axis label
         
         # Add a secondary x-axis at the top for MOA values
         ax2 = ax.twiny()
         ax2.set_xlim(-max_moa, max_moa)
         ax2.set_xticks(moa_major_ticks)
         ax2.set_xlabel('MOA', fontsize=36)  # 3x larger
+        # Make tick labels larger
+        ax2.tick_params(axis='x', labelsize=24)
         
         # === MAIN AXIS LINES ===
         ax.axhline(0, color='black', lw=1)

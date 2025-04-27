@@ -140,7 +140,10 @@ The Wind Plots module (`pyqt_app/modules/wind_plot.py`) provides tools for creat
 - Supports customization of distance/MOA pairs for each profile
 - Handles profile data persistence in a platform-specific location
 - Features a two-column layout with profile management and distance parameters on the left, and plots on the right
-- Provides PDF export functionality that generates a PDF with plots arranged in a 2×4 grid per page
+- Provides PDF export functionality that generates PDFs with plots arranged in either 2×4 grid (8 per page) or 1×2 grid (2 per page)
+- Displays intuitive clock time labels (03:00, 09:00, etc.) for wind direction reference
+- Features enhanced axis labels with increased font sizes for better readability
+- Provides a clean interface with optimized label placement and no redundant information
 
 ### Key Classes
 
