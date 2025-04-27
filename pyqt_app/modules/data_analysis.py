@@ -505,6 +505,86 @@ class DataAnalysisWidget(QWidget):
         
         filter_groups.addWidget(results_velocity_group)
         
+        # Environment filters - split into two columns
+        environment_container = QWidget()
+        environment_container_layout = QHBoxLayout(environment_container)
+        
+        # Left column of Environment
+        environment_left = QGroupBox("Environment (1/2)")
+        environment_left_layout = QFormLayout(environment_left)
+        
+        # Temperature filter
+        self.temperature_min = QLineEdit()
+        self.temperature_max = QLineEdit()
+        temperature_layout = QHBoxLayout()
+        temperature_layout.addWidget(self.temperature_min)
+        temperature_layout.addWidget(QLabel("to"))
+        temperature_layout.addWidget(self.temperature_max)
+        environment_left_layout.addRow("Temperature (°C):", temperature_layout)
+        
+        # Humidity filter
+        self.humidity_min = QLineEdit()
+        self.humidity_max = QLineEdit()
+        humidity_layout = QHBoxLayout()
+        humidity_layout.addWidget(self.humidity_min)
+        humidity_layout.addWidget(QLabel("to"))
+        humidity_layout.addWidget(self.humidity_max)
+        environment_left_layout.addRow("Humidity (%):", humidity_layout)
+        
+        # Pressure filter
+        self.pressure_min = QLineEdit()
+        self.pressure_max = QLineEdit()
+        pressure_layout = QHBoxLayout()
+        pressure_layout.addWidget(self.pressure_min)
+        pressure_layout.addWidget(QLabel("to"))
+        pressure_layout.addWidget(self.pressure_max)
+        environment_left_layout.addRow("Pressure (hPa):", pressure_layout)
+        
+        # Wind speed filter
+        self.wind_speed_min = QLineEdit()
+        self.wind_speed_max = QLineEdit()
+        wind_speed_layout = QHBoxLayout()
+        wind_speed_layout.addWidget(self.wind_speed_min)
+        wind_speed_layout.addWidget(QLabel("to"))
+        wind_speed_layout.addWidget(self.wind_speed_max)
+        environment_left_layout.addRow("Wind Speed (m/s):", wind_speed_layout)
+        
+        # Wind direction filter
+        self.wind_direction_min = QLineEdit()
+        self.wind_direction_max = QLineEdit()
+        wind_direction_layout = QHBoxLayout()
+        wind_direction_layout.addWidget(self.wind_direction_min)
+        wind_direction_layout.addWidget(QLabel("to"))
+        wind_direction_layout.addWidget(self.wind_direction_max)
+        environment_left_layout.addRow("Wind Direction (°):", wind_direction_layout)
+        
+        environment_container_layout.addWidget(environment_left)
+        
+        # Right column of Environment
+        environment_right = QGroupBox("Environment (2/2)")
+        environment_right_layout = QVBoxLayout(environment_right)
+        
+        # Light conditions filter (multiple selection)
+        environment_right_layout.addWidget(QLabel("Light Conditions:"))
+        
+        light_conditions_layout = QVBoxLayout()
+        self.light_conditions_checkboxes = {}
+        
+        # Get light conditions from Lists.yaml (sky)
+        light_conditions = ["Clear", "Partly Cloudy", "Cloudy", "Overcast", "Rain", "Snow", "Stormy"]
+        
+        for condition in light_conditions:
+            checkbox = QCheckBox(condition)
+            checkbox.setChecked(False)
+            light_conditions_layout.addWidget(checkbox)
+            self.light_conditions_checkboxes[condition] = checkbox
+        
+        environment_right_layout.addLayout(light_conditions_layout)
+        
+        environment_container_layout.addWidget(environment_right)
+        
+        filter_groups.addWidget(environment_container)
+        
         filter_layout.addLayout(filter_groups)
         
         # Apply filters button
@@ -1450,6 +1530,128 @@ class DataAnalysisWidget(QWidget):
                 print(f"Error converting ES Velocity filter values: {e}")
             except Exception as e:
                 print(f"Error applying ES Velocity filter: {e}")
+        
+        # Apply Environment filters
+        
+        # Temperature filter
+        if self.temperature_min.text() and self.temperature_max.text():
+            try:
+                min_temperature = float(self.temperature_min.text())
+                max_temperature = float(self.temperature_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "temperature_c" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["temperature_c"].notna()
+                    mask = mask & (filtered_df["temperature_c"] >= min_temperature)
+                    mask = mask & (filtered_df["temperature_c"] <= max_temperature)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'temperature_c' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Temperature filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Temperature filter: {e}")
+        
+        # Humidity filter
+        if self.humidity_min.text() and self.humidity_max.text():
+            try:
+                min_humidity = float(self.humidity_min.text())
+                max_humidity = float(self.humidity_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "humidity_pct" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["humidity_pct"].notna()
+                    mask = mask & (filtered_df["humidity_pct"] >= min_humidity)
+                    mask = mask & (filtered_df["humidity_pct"] <= max_humidity)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'humidity_pct' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Humidity filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Humidity filter: {e}")
+        
+        # Pressure filter
+        if self.pressure_min.text() and self.pressure_max.text():
+            try:
+                min_pressure = float(self.pressure_min.text())
+                max_pressure = float(self.pressure_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "pressure_hpa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["pressure_hpa"].notna()
+                    mask = mask & (filtered_df["pressure_hpa"] >= min_pressure)
+                    mask = mask & (filtered_df["pressure_hpa"] <= max_pressure)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'pressure_hpa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Pressure filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Pressure filter: {e}")
+        
+        # Wind speed filter
+        if self.wind_speed_min.text() and self.wind_speed_max.text():
+            try:
+                min_wind_speed = float(self.wind_speed_min.text())
+                max_wind_speed = float(self.wind_speed_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "wind_speed_ms" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["wind_speed_ms"].notna()
+                    mask = mask & (filtered_df["wind_speed_ms"] >= min_wind_speed)
+                    mask = mask & (filtered_df["wind_speed_ms"] <= max_wind_speed)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'wind_speed_ms' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Wind Speed filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Wind Speed filter: {e}")
+        
+        # Wind direction filter
+        if self.wind_direction_min.text() and self.wind_direction_max.text():
+            try:
+                min_wind_direction = float(self.wind_direction_min.text())
+                max_wind_direction = float(self.wind_direction_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "wind_direction" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["wind_direction"].notna()
+                    mask = mask & (filtered_df["wind_direction"] >= min_wind_direction)
+                    mask = mask & (filtered_df["wind_direction"] <= max_wind_direction)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'wind_direction' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Wind Direction filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Wind Direction filter: {e}")
+        
+        # Light conditions filter (multiple selection)
+        selected_light_conditions = [condition for condition, checkbox in self.light_conditions_checkboxes.items() if checkbox.isChecked()]
+        if selected_light_conditions:
+            # Check if the column exists in the dataframe
+            if "light_conditions" in filtered_df.columns:
+                # Filter for rows where light_conditions is in the selected list
+                filtered_df = filtered_df[filtered_df["light_conditions"].isin(selected_light_conditions)]
+            else:
+                print("Warning: 'light_conditions' column not found in the data")
                 
         # For backward compatibility
         if self.group_min is not None and self.group_max is not None and self.group_min.text() and self.group_max.text():
@@ -1537,6 +1739,22 @@ class DataAnalysisWidget(QWidget):
         self.sd_velocity_max.clear()
         self.es_velocity_min.clear()
         self.es_velocity_max.clear()
+        
+        # Reset Environment filters
+        self.temperature_min.clear()
+        self.temperature_max.clear()
+        self.humidity_min.clear()
+        self.humidity_max.clear()
+        self.pressure_min.clear()
+        self.pressure_max.clear()
+        self.wind_speed_min.clear()
+        self.wind_speed_max.clear()
+        self.wind_direction_min.clear()
+        self.wind_direction_max.clear()
+        
+        # Reset Light conditions checkboxes
+        for checkbox in self.light_conditions_checkboxes.values():
+            checkbox.setChecked(False)
         
         # For backward compatibility with existing code
         self.group_min = self.group_es_min
