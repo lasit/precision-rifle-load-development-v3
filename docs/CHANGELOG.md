@@ -63,6 +63,7 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Fixed selection state preservation when applying filters
 - Improved checkbox behavior in the test table
 - Fixed graph rendering issues to prevent duplicate lines
+- Fixed error in ViewTestWidget when trying to create a new test (AttributeError: 'ViewTestWidget' object has no attribute 'test_id_combo')
 
 ## [1.2.0] - 2025-03-15
 

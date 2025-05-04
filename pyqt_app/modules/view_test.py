@@ -1337,14 +1337,22 @@ class ViewTestWidget(QWidget):
             self.clear_details()
     
     def populate_test_ids(self):
-        """Populate the ComboBox with test IDs from the tests directory"""
-        self.test_id_combo.clear()
-        self.test_id_combo.addItem("Select a test...")
+        """Refresh the test data and update the table model"""
         try:
-            if os.path.exists(self.tests_dir):
-                # Filter out non-directory items like .DS_Store
-                test_ids = sorted([d for d in os.listdir(self.tests_dir) if os.path.isdir(os.path.join(self.tests_dir, d))])
-                self.test_id_combo.addItems(test_ids)
+            # Load all test data
+            self.all_data = load_all_test_data(self.tests_dir)
+            
+            # Make a copy of the data for filtering
+            self.filtered_data = self.all_data.copy()
+            
+            # Update the table model
+            self.test_model.update_data(self.filtered_data)
+            
+            # Update result count
+            self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+            
+            # Populate filter dropdowns
+            self.populate_filters()
         except Exception as e:
             print(f"Error populating test IDs: {e}")
 

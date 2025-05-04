@@ -53,6 +53,7 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - `load_selected_test()`: Loads a test from a file
 - `save_changes()`: Saves changes to a test file
 - `refresh()`: Refreshes the list of available tests
+- `populate_test_ids()`: Refreshes the test data and updates the table model
 - `refresh_component_lists()`: Refreshes the component dropdown lists
 - `copy_environment_data()`: Copies environment data from the current test
 - `paste_environment_data()`: Pastes copied environment data into the current test
