@@ -19,6 +19,8 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Calendar widget for date filtering in the Data Analysis tab
 - Additional columns in the Data Analysis tab (Group ES Width-X, Group ES Height-Y, POA Horizontal-X, POA Vertical-Y, Number of shots)
 - MOA equivalents for all measurements in the Results Target section (Mean Radius, Group ES Width-X, Group ES Height-Y, POA Horizontal-X, POA Vertical-Y)
+- Added MOA fields to the Data Analysis tab filters and visualization
+- Updated Accuracy and Combined plots to use Group ES Vertical (MOA) instead of Mean Radius (mm)
 - Test selection feature in Data Analysis module allowing users to include/exclude specific tests from analysis
 - Improved filter layout with reorganized sections for better usability
 - Scrollable visualization area for larger graph displays

@@ -65,10 +65,11 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 
 The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools for analyzing and visualizing test data. It:
 
-- Displays test data in a table with comprehensive columns including environment data
+- Displays test data in a table with comprehensive columns including environment data and MOA measurements
 - Provides filtering options for test data with calendar widgets for date selection
 - Generates charts and visualizations for accuracy and velocity metrics
-- Allows filtering by various parameters including group size, velocity, and shot count
+- Allows filtering by various parameters including group size, velocity, shot count, and MOA values
+- Features updated Accuracy and Combined plots that use Group ES Vertical (MOA) instead of Mean Radius (mm)
 - Enables selective inclusion/exclusion of specific tests from analysis via checkboxes
 - Provides bulk selection controls (Select All, Deselect All, Toggle Selection)
 - Preserves selection state when applying filters
