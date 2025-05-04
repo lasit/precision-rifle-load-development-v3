@@ -77,9 +77,15 @@ results_target:
   target_image: "target1.jpg" # Filename of target image
   shots: 5 # Number of shots in the group
   group_es_x_mm: 33.05 # Extreme spread in X direction (mm)
+  group_es_x_moa: 1.15 # Extreme spread in X direction (MOA)
   group_es_y_mm: 24.63 # Extreme spread in Y direction (mm)
+  group_es_y_moa: 0.86 # Extreme spread in Y direction (MOA)
   poi_x_mm: 2.6 # Point of impact X coordinate (mm)
+  poi_x_moa: 0.09 # Point of impact X coordinate (MOA)
   poi_y_mm: 17.47 # Point of impact Y coordinate (mm)
+  poi_y_moa: 0.61 # Point of impact Y coordinate (MOA)
+  mean_radius_mm: 9.2 # Mean radius (mm)
+  mean_radius_moa: 0.32 # Mean radius (MOA)
   
 # Velocity Results
 results_velocity:

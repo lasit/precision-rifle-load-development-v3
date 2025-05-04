@@ -72,8 +72,9 @@ class TestDataModel(QAbstractTableModel):
             "primer_brand", "primer_model", "primer_lot",
             
             # Results
-            "group_es_mm", "group_es_moa", "mean_radius_mm",
-            "group_es_x_mm", "group_es_y_mm", "poi_x_mm", "poi_y_mm",
+            "group_es_mm", "group_es_moa", "mean_radius_mm", "mean_radius_moa",
+            "group_es_x_mm", "group_es_x_moa", "group_es_y_mm", "group_es_y_moa", 
+            "poi_x_mm", "poi_x_moa", "poi_y_mm", "poi_y_moa",
             "avg_velocity_fps", "sd_fps", "es_fps", 
             
             # Environment
@@ -245,11 +246,84 @@ class DataAnalysisWidget(QWidget):
             "shots": "Number of Shots"
         }
         
+        # Flag to temporarily disable auto-ranging when filters are being applied
+        self.disable_auto_range = False
+        
+        # Configuration for auto-range filters
+        # Format: {
+        #   'column_name': {
+        #     'type': 'date' or 'numeric',
+        #     'min_widget': reference to min widget,
+        #     'max_widget': reference to max widget,
+        #     'enabled': True/False
+        #   }
+        # }
+        self.auto_range_filters = {}
+        
         # Set up the UI
         self.setup_ui()
         
         # Load test data
         self.load_data()
+    
+    def register_auto_range_filter(self, column_name, filter_type, min_widget, max_widget, enabled=True):
+        """Register a filter for auto-ranging
+        
+        Args:
+            column_name (str): The name of the column in the dataframe
+            filter_type (str): The type of filter ('date' or 'numeric')
+            min_widget: The widget for the minimum value
+            max_widget: The widget for the maximum value
+            enabled (bool): Whether auto-ranging is enabled for this filter
+        """
+        self.auto_range_filters[column_name] = {
+            'type': filter_type,
+            'min_widget': min_widget,
+            'max_widget': max_widget,
+            'enabled': enabled
+        }
+    
+    def update_filter_ranges(self, df):
+        """Update filter ranges based on the current filtered data
+        
+        Args:
+            df (DataFrame): The dataframe to use for calculating ranges
+        """
+        if self.disable_auto_range or df.empty:
+            return
+        
+        for column_name, filter_config in self.auto_range_filters.items():
+            if not filter_config['enabled'] or column_name not in df.columns:
+                continue
+            
+            # Get min and max values from the dataframe
+            try:
+                if filter_config['type'] == 'date':
+                    # For date filters
+                    min_date = df[column_name].min()
+                    max_date = df[column_name].max()
+                    
+                    if pd.notna(min_date) and pd.notna(max_date):
+                        # Convert to QDate
+                        min_qdate = QDate.fromString(min_date, "yyyy-MM-dd")
+                        max_qdate = QDate.fromString(max_date, "yyyy-MM-dd")
+                        
+                        # Update the widgets
+                        filter_config['min_widget'].setDate(min_qdate)
+                        filter_config['max_widget'].setDate(max_qdate)
+                
+                elif filter_config['type'] == 'numeric':
+                    # For numeric filters
+                    min_value = df[column_name].min()
+                    max_value = df[column_name].max()
+                    
+                    if pd.notna(min_value) and pd.notna(max_value):
+                        # Update the widgets
+                        filter_config['min_widget'].setText(str(min_value))
+                        filter_config['max_widget'].setText(str(max_value))
+            
+            except Exception as e:
+                print(f"Error updating filter range for {column_name}: {e}")
     
     def setup_ui(self):
         """Set up the user interface"""
@@ -845,6 +919,12 @@ class DataAnalysisWidget(QWidget):
         
         # Populate filter dropdowns
         self.populate_filters()
+        
+        # Register auto-range filters
+        self.register_auto_range_filter('date', 'date', self.date_from, self.date_to, True)
+        
+        # Update filter ranges based on the current data
+        self.update_filter_ranges(self.filtered_data)
         
         # Populate custom plot parameter dropdowns
         self.populate_plot_params()
@@ -1688,6 +1768,12 @@ class DataAnalysisWidget(QWidget):
         
         # Update result count
         self.result_count_label.setText(f"{len(self.filtered_data)} tests found")
+        
+        # Update auto-range filters based on the filtered data
+        # Temporarily disable auto-ranging to prevent infinite recursion
+        self.disable_auto_range = True
+        self.update_filter_ranges(self.filtered_data)
+        self.disable_auto_range = False
         
         # Update plots
         self.update_plots()

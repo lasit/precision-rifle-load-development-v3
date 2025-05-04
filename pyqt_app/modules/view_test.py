@@ -1618,6 +1618,26 @@ class ViewTestWidget(QWidget):
         
         return container
     
+    def _mm_to_moa(self, mm_value, distance_m):
+        """Convert a measurement from mm to MOA based on distance
+        
+        Args:
+            mm_value (float): The measurement in millimeters
+            distance_m (int/float): The distance in meters
+            
+        Returns:
+            float: The measurement in MOA, or None if inputs are invalid
+        """
+        try:
+            if mm_value is None or distance_m is None or distance_m <= 0:
+                return None
+            
+            # Convert mm to MOA using the formula: MOA = (mm * 3438) / (distance_in_meters * 1000)
+            moa_value = (float(mm_value) * 3438) / (float(distance_m) * 1000)
+            return moa_value
+        except (ValueError, TypeError, ZeroDivisionError):
+            return None
+    
     def _create_results_target_group(self):
         """Create the Results Target group"""
         target_group = QGroupBox("Results Target")
@@ -1631,21 +1651,31 @@ class ViewTestWidget(QWidget):
         self.group_es_mm_edit = QLineEdit()
         self.group_es_moa_edit = QLineEdit()
         self.mean_radius_mm_edit = QLineEdit()
+        self.mean_radius_moa_edit = QLineEdit()
         target_layout.addRow("Group ES (mm):", self.group_es_mm_edit)
         target_layout.addRow("Group ES (MOA):", self.group_es_moa_edit)
         target_layout.addRow("Mean Radius (mm):", self.mean_radius_mm_edit)
+        target_layout.addRow("Mean Radius (MOA):", self.mean_radius_moa_edit)
         
         # Group dimensions
         self.group_es_x_mm_edit = QLineEdit()
+        self.group_es_x_moa_edit = QLineEdit()
         self.group_es_y_mm_edit = QLineEdit()
+        self.group_es_y_moa_edit = QLineEdit()
         target_layout.addRow("Group ES Width-X (mm):", self.group_es_x_mm_edit)
+        target_layout.addRow("Group ES Width-X (MOA):", self.group_es_x_moa_edit)
         target_layout.addRow("Group ES Height-Y (mm):", self.group_es_y_mm_edit)
+        target_layout.addRow("Group ES Height-Y (MOA):", self.group_es_y_moa_edit)
         
         # Point of impact
         self.poi_x_mm_edit = QLineEdit()
+        self.poi_x_moa_edit = QLineEdit()
         self.poi_y_mm_edit = QLineEdit()
+        self.poi_y_moa_edit = QLineEdit()
         target_layout.addRow("POA Horizontal-X (mm):", self.poi_x_mm_edit)
+        target_layout.addRow("POA Horizontal-X (MOA):", self.poi_x_moa_edit)
         target_layout.addRow("POA Vertical-Y (mm):", self.poi_y_mm_edit)
+        target_layout.addRow("POA Vertical-Y (MOA):", self.poi_y_moa_edit)
         
         return target_group
     
@@ -2057,13 +2087,106 @@ class ViewTestWidget(QWidget):
         # Results - Group
         group_data = data.get('group', {}) # Get the nested group dictionary
         self.shots_edit.setText(str(group_data.get('shots', '')))
-        self.group_es_mm_edit.setText(str(group_data.get('group_es_mm', '')))
-        self.group_es_moa_edit.setText(str(group_data.get('group_es_moa', '')))
-        self.mean_radius_mm_edit.setText(str(group_data.get('mean_radius_mm', '')))
-        self.group_es_x_mm_edit.setText(str(group_data.get('group_es_x_mm', '')))
-        self.group_es_y_mm_edit.setText(str(group_data.get('group_es_y_mm', '')))
-        self.poi_x_mm_edit.setText(str(group_data.get('poi_x_mm', '')))
-        self.poi_y_mm_edit.setText(str(group_data.get('poi_y_mm', '')))
+        
+        # Get distance for MOA calculations
+        distance_m = data.get('distance_m')
+        
+        # Helper function to format MOA values with 2 decimal places
+        def format_moa(moa_value):
+            if moa_value == '':
+                return ''
+            try:
+                return f"{float(moa_value):.2f}"
+            except (ValueError, TypeError):
+                return str(moa_value)
+        
+        # Group ES
+        group_es_mm = group_data.get('group_es_mm', '')
+        group_es_moa = group_data.get('group_es_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if group_es_mm and not group_es_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(group_es_mm), float(distance_m))
+                group_es_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                group_es_moa = ''
+        else:
+            group_es_moa = format_moa(group_es_moa)
+        self.group_es_mm_edit.setText(str(group_es_mm))
+        self.group_es_moa_edit.setText(group_es_moa)
+        
+        # Mean Radius
+        mean_radius_mm = group_data.get('mean_radius_mm', '')
+        mean_radius_moa = group_data.get('mean_radius_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if mean_radius_mm and not mean_radius_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(mean_radius_mm), float(distance_m))
+                mean_radius_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                mean_radius_moa = ''
+        else:
+            mean_radius_moa = format_moa(mean_radius_moa)
+        self.mean_radius_mm_edit.setText(str(mean_radius_mm))
+        self.mean_radius_moa_edit.setText(mean_radius_moa)
+        
+        # Group ES X and Y
+        group_es_x_mm = group_data.get('group_es_x_mm', '')
+        group_es_x_moa = group_data.get('group_es_x_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if group_es_x_mm and not group_es_x_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(group_es_x_mm), float(distance_m))
+                group_es_x_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                group_es_x_moa = ''
+        else:
+            group_es_x_moa = format_moa(group_es_x_moa)
+        self.group_es_x_mm_edit.setText(str(group_es_x_mm))
+        self.group_es_x_moa_edit.setText(group_es_x_moa)
+        
+        group_es_y_mm = group_data.get('group_es_y_mm', '')
+        group_es_y_moa = group_data.get('group_es_y_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if group_es_y_mm and not group_es_y_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(group_es_y_mm), float(distance_m))
+                group_es_y_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                group_es_y_moa = ''
+        else:
+            group_es_y_moa = format_moa(group_es_y_moa)
+        self.group_es_y_mm_edit.setText(str(group_es_y_mm))
+        self.group_es_y_moa_edit.setText(group_es_y_moa)
+        
+        # POI X and Y
+        poi_x_mm = group_data.get('poi_x_mm', '')
+        poi_x_moa = group_data.get('poi_x_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if poi_x_mm and not poi_x_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(poi_x_mm), float(distance_m))
+                poi_x_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                poi_x_moa = ''
+        else:
+            poi_x_moa = format_moa(poi_x_moa)
+        self.poi_x_mm_edit.setText(str(poi_x_mm))
+        self.poi_x_moa_edit.setText(poi_x_moa)
+        
+        poi_y_mm = group_data.get('poi_y_mm', '')
+        poi_y_moa = group_data.get('poi_y_moa', '')
+        # If mm value is provided but MOA is not, calculate MOA
+        if poi_y_mm and not poi_y_moa and distance_m:
+            try:
+                moa_value = self._mm_to_moa(float(poi_y_mm), float(distance_m))
+                poi_y_moa = f"{moa_value:.2f}" if moa_value is not None else ''
+            except (ValueError, TypeError):
+                poi_y_moa = ''
+        else:
+            poi_y_moa = format_moa(poi_y_moa)
+        self.poi_y_mm_edit.setText(str(poi_y_mm))
+        self.poi_y_moa_edit.setText(poi_y_moa)
 
         # Results - Velocity (Corrected to chrono)
         chrono_data = data.get('chrono', {})
@@ -2323,26 +2446,116 @@ class ViewTestWidget(QWidget):
         # Results - Group
         group_data = {}
         shots_val = safe_convert(self.shots_edit.text(), int)
+        
+        # Get distance for MOA calculations
+        distance_m = updated_data.get('distance_m')
+        
+        # Helper function to format MOA values with 2 decimal places
+        def format_moa_value(moa_val):
+            if moa_val is not None and moa_val != "INVALID_INPUT":
+                try:
+                    # Round to 2 decimal places
+                    return round(float(moa_val), 2)
+                except (ValueError, TypeError):
+                    return moa_val
+            return moa_val
+        
+        # Group ES
         es_mm_val = safe_convert(self.group_es_mm_edit.text(), float)
         es_moa_val = safe_convert(self.group_es_moa_edit.text(), float)
-        mean_rad_val = safe_convert(self.mean_radius_mm_edit.text(), float)
-        es_x_val = safe_convert(self.group_es_x_mm_edit.text(), float)
-        es_y_val = safe_convert(self.group_es_y_mm_edit.text(), float)
-        poi_x_val = safe_convert(self.poi_x_mm_edit.text(), float)
-        poi_y_val = safe_convert(self.poi_y_mm_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if es_mm_val is not None and es_moa_val is None and distance_m is not None:
+            es_moa_val = self._mm_to_moa(es_mm_val, distance_m)
+            if es_moa_val is not None:
+                es_moa_val = round(es_moa_val, 2)
+        else:
+            es_moa_val = format_moa_value(es_moa_val)
         
-        if shots_val == "INVALID_INPUT" or es_mm_val == "INVALID_INPUT" or es_moa_val == "INVALID_INPUT" or mean_rad_val == "INVALID_INPUT" or es_x_val == "INVALID_INPUT" or es_y_val == "INVALID_INPUT" or poi_x_val == "INVALID_INPUT" or poi_y_val == "INVALID_INPUT":
+        # Mean Radius
+        mean_rad_val = safe_convert(self.mean_radius_mm_edit.text(), float)
+        mean_rad_moa_val = safe_convert(self.mean_radius_moa_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if mean_rad_val is not None and mean_rad_moa_val is None and distance_m is not None:
+            mean_rad_moa_val = self._mm_to_moa(mean_rad_val, distance_m)
+            if mean_rad_moa_val is not None:
+                mean_rad_moa_val = round(mean_rad_moa_val, 2)
+        else:
+            mean_rad_moa_val = format_moa_value(mean_rad_moa_val)
+        
+        # Group ES X and Y
+        es_x_val = safe_convert(self.group_es_x_mm_edit.text(), float)
+        es_x_moa_val = safe_convert(self.group_es_x_moa_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if es_x_val is not None and es_x_moa_val is None and distance_m is not None:
+            es_x_moa_val = self._mm_to_moa(es_x_val, distance_m)
+            if es_x_moa_val is not None:
+                es_x_moa_val = round(es_x_moa_val, 2)
+        else:
+            es_x_moa_val = format_moa_value(es_x_moa_val)
+        
+        es_y_val = safe_convert(self.group_es_y_mm_edit.text(), float)
+        es_y_moa_val = safe_convert(self.group_es_y_moa_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if es_y_val is not None and es_y_moa_val is None and distance_m is not None:
+            es_y_moa_val = self._mm_to_moa(es_y_val, distance_m)
+            if es_y_moa_val is not None:
+                es_y_moa_val = round(es_y_moa_val, 2)
+        else:
+            es_y_moa_val = format_moa_value(es_y_moa_val)
+        
+        # POI X and Y
+        poi_x_val = safe_convert(self.poi_x_mm_edit.text(), float)
+        poi_x_moa_val = safe_convert(self.poi_x_moa_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if poi_x_val is not None and poi_x_moa_val is None and distance_m is not None:
+            poi_x_moa_val = self._mm_to_moa(poi_x_val, distance_m)
+            if poi_x_moa_val is not None:
+                poi_x_moa_val = round(poi_x_moa_val, 2)
+        else:
+            poi_x_moa_val = format_moa_value(poi_x_moa_val)
+        
+        poi_y_val = safe_convert(self.poi_y_mm_edit.text(), float)
+        poi_y_moa_val = safe_convert(self.poi_y_moa_edit.text(), float)
+        # If mm value is provided but MOA is not, calculate MOA
+        if poi_y_val is not None and poi_y_moa_val is None and distance_m is not None:
+            poi_y_moa_val = self._mm_to_moa(poi_y_val, distance_m)
+            if poi_y_moa_val is not None:
+                poi_y_moa_val = round(poi_y_moa_val, 2)
+        else:
+            poi_y_moa_val = format_moa_value(poi_y_moa_val)
+        
+        # Check for invalid inputs
+        if (shots_val == "INVALID_INPUT" or 
+            es_mm_val == "INVALID_INPUT" or es_moa_val == "INVALID_INPUT" or 
+            mean_rad_val == "INVALID_INPUT" or mean_rad_moa_val == "INVALID_INPUT" or 
+            es_x_val == "INVALID_INPUT" or es_x_moa_val == "INVALID_INPUT" or 
+            es_y_val == "INVALID_INPUT" or es_y_moa_val == "INVALID_INPUT" or 
+            poi_x_val == "INVALID_INPUT" or poi_x_moa_val == "INVALID_INPUT" or 
+            poi_y_val == "INVALID_INPUT" or poi_y_moa_val == "INVALID_INPUT"):
             error_occurred = True
         
         # Use correct keys from YAML when saving
         group_data['shots'] = shots_val
+        
+        # Group ES
         group_data['group_es_mm'] = es_mm_val 
         group_data['group_es_moa'] = es_moa_val 
+        
+        # Mean Radius
         group_data['mean_radius_mm'] = mean_rad_val
+        group_data['mean_radius_moa'] = mean_rad_moa_val
+        
+        # Group ES X and Y
         group_data['group_es_x_mm'] = es_x_val
+        group_data['group_es_x_moa'] = es_x_moa_val
         group_data['group_es_y_mm'] = es_y_val
+        group_data['group_es_y_moa'] = es_y_moa_val
+        
+        # POI X and Y
         group_data['poi_x_mm'] = poi_x_val
+        group_data['poi_x_moa'] = poi_x_moa_val
         group_data['poi_y_mm'] = poi_y_val
+        group_data['poi_y_moa'] = poi_y_moa_val
         
         if any(v is not None for v in group_data.values()): 
             updated_data['group'] = group_data
