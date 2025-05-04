@@ -236,10 +236,15 @@ class DataAnalysisWidget(QWidget):
             "group_es_mm": "Group ES (mm)",
             "group_es_moa": "Group ES (MOA)",
             "mean_radius_mm": "Mean Radius (mm)",
+            "mean_radius_moa": "Mean Radius (MOA)",
             "group_es_x_mm": "Group ES Width-X (mm)",
+            "group_es_x_moa": "Group ES Width-X (MOA)",
             "group_es_y_mm": "Group ES Height-Y (mm)",
+            "group_es_y_moa": "Group ES Height-Y (MOA)",
             "poi_x_mm": "POA Horizontal-X (mm)",
+            "poi_x_moa": "POA Horizontal-X (MOA)",
             "poi_y_mm": "POA Vertical-Y (mm)",
+            "poi_y_moa": "POA Vertical-Y (MOA)",
             "avg_velocity_fps": "Avg Velocity (fps)",
             "sd_fps": "SD Velocity (fps)",
             "es_fps": "ES Velocity (fps)",
@@ -500,6 +505,15 @@ class DataAnalysisWidget(QWidget):
         mean_radius_layout.addWidget(self.mean_radius_max)
         results_target_left_layout.addRow("Mean Radius (mm):", mean_radius_layout)
         
+        # Mean Radius MOA filter
+        self.mean_radius_moa_min = QLineEdit()
+        self.mean_radius_moa_max = QLineEdit()
+        mean_radius_moa_layout = QHBoxLayout()
+        mean_radius_moa_layout.addWidget(self.mean_radius_moa_min)
+        mean_radius_moa_layout.addWidget(QLabel("to"))
+        mean_radius_moa_layout.addWidget(self.mean_radius_moa_max)
+        results_target_left_layout.addRow("Mean Radius (MOA):", mean_radius_moa_layout)
+        
         results_target_container_layout.addWidget(results_target_left)
         
         # Right column of Results Target
@@ -515,6 +529,15 @@ class DataAnalysisWidget(QWidget):
         group_es_x_layout.addWidget(self.group_es_x_max)
         results_target_right_layout.addRow("Group ES Width-X (mm):", group_es_x_layout)
         
+        # Group ES Width-X MOA filter
+        self.group_es_x_moa_min = QLineEdit()
+        self.group_es_x_moa_max = QLineEdit()
+        group_es_x_moa_layout = QHBoxLayout()
+        group_es_x_moa_layout.addWidget(self.group_es_x_moa_min)
+        group_es_x_moa_layout.addWidget(QLabel("to"))
+        group_es_x_moa_layout.addWidget(self.group_es_x_moa_max)
+        results_target_right_layout.addRow("Group ES Width-X (MOA):", group_es_x_moa_layout)
+        
         # Group ES Height-Y filter
         self.group_es_y_min = QLineEdit()
         self.group_es_y_max = QLineEdit()
@@ -523,6 +546,15 @@ class DataAnalysisWidget(QWidget):
         group_es_y_layout.addWidget(QLabel("to"))
         group_es_y_layout.addWidget(self.group_es_y_max)
         results_target_right_layout.addRow("Group ES Height-Y (mm):", group_es_y_layout)
+        
+        # Group ES Height-Y MOA filter
+        self.group_es_y_moa_min = QLineEdit()
+        self.group_es_y_moa_max = QLineEdit()
+        group_es_y_moa_layout = QHBoxLayout()
+        group_es_y_moa_layout.addWidget(self.group_es_y_moa_min)
+        group_es_y_moa_layout.addWidget(QLabel("to"))
+        group_es_y_moa_layout.addWidget(self.group_es_y_moa_max)
+        results_target_right_layout.addRow("Group ES Height-Y (MOA):", group_es_y_moa_layout)
         
         # POA Horizontal-X filter
         self.poi_x_min = QLineEdit()
@@ -533,6 +565,15 @@ class DataAnalysisWidget(QWidget):
         poi_x_layout.addWidget(self.poi_x_max)
         results_target_right_layout.addRow("POA Horizontal-X (mm):", poi_x_layout)
         
+        # POA Horizontal-X MOA filter
+        self.poi_x_moa_min = QLineEdit()
+        self.poi_x_moa_max = QLineEdit()
+        poi_x_moa_layout = QHBoxLayout()
+        poi_x_moa_layout.addWidget(self.poi_x_moa_min)
+        poi_x_moa_layout.addWidget(QLabel("to"))
+        poi_x_moa_layout.addWidget(self.poi_x_moa_max)
+        results_target_right_layout.addRow("POA Horizontal-X (MOA):", poi_x_moa_layout)
+        
         # POA Vertical-Y filter
         self.poi_y_min = QLineEdit()
         self.poi_y_max = QLineEdit()
@@ -541,6 +582,15 @@ class DataAnalysisWidget(QWidget):
         poi_y_layout.addWidget(QLabel("to"))
         poi_y_layout.addWidget(self.poi_y_max)
         results_target_right_layout.addRow("POA Vertical-Y (mm):", poi_y_layout)
+        
+        # POA Vertical-Y MOA filter
+        self.poi_y_moa_min = QLineEdit()
+        self.poi_y_moa_max = QLineEdit()
+        poi_y_moa_layout = QHBoxLayout()
+        poi_y_moa_layout.addWidget(self.poi_y_moa_min)
+        poi_y_moa_layout.addWidget(QLabel("to"))
+        poi_y_moa_layout.addWidget(self.poi_y_moa_max)
+        results_target_right_layout.addRow("POA Vertical-Y (MOA):", poi_y_moa_layout)
         
         results_target_container_layout.addWidget(results_target_right)
         
@@ -1455,6 +1505,28 @@ class DataAnalysisWidget(QWidget):
             except Exception as e:
                 print(f"Error applying Mean Radius filter: {e}")
         
+        # Mean Radius MOA filter
+        if self.mean_radius_moa_min.text() and self.mean_radius_moa_max.text():
+            try:
+                min_mean_radius_moa = float(self.mean_radius_moa_min.text())
+                max_mean_radius_moa = float(self.mean_radius_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "mean_radius_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["mean_radius_moa"].notna()
+                    mask = mask & (filtered_df["mean_radius_moa"] >= min_mean_radius_moa)
+                    mask = mask & (filtered_df["mean_radius_moa"] <= max_mean_radius_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'mean_radius_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Mean Radius (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Mean Radius (MOA) filter: {e}")
+        
         # Group ES Width-X filter
         if self.group_es_x_min.text() and self.group_es_x_max.text():
             try:
@@ -1476,6 +1548,28 @@ class DataAnalysisWidget(QWidget):
                 print(f"Error converting Group ES Width-X filter values: {e}")
             except Exception as e:
                 print(f"Error applying Group ES Width-X filter: {e}")
+        
+        # Group ES Width-X MOA filter
+        if self.group_es_x_moa_min.text() and self.group_es_x_moa_max.text():
+            try:
+                min_group_es_x_moa = float(self.group_es_x_moa_min.text())
+                max_group_es_x_moa = float(self.group_es_x_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "group_es_x_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_x_moa"].notna()
+                    mask = mask & (filtered_df["group_es_x_moa"] >= min_group_es_x_moa)
+                    mask = mask & (filtered_df["group_es_x_moa"] <= max_group_es_x_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_x_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES Width-X (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES Width-X (MOA) filter: {e}")
         
         # Group ES Height-Y filter
         if self.group_es_y_min.text() and self.group_es_y_max.text():
@@ -1499,6 +1593,28 @@ class DataAnalysisWidget(QWidget):
             except Exception as e:
                 print(f"Error applying Group ES Height-Y filter: {e}")
         
+        # Group ES Height-Y MOA filter
+        if self.group_es_y_moa_min.text() and self.group_es_y_moa_max.text():
+            try:
+                min_group_es_y_moa = float(self.group_es_y_moa_min.text())
+                max_group_es_y_moa = float(self.group_es_y_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "group_es_y_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["group_es_y_moa"].notna()
+                    mask = mask & (filtered_df["group_es_y_moa"] >= min_group_es_y_moa)
+                    mask = mask & (filtered_df["group_es_y_moa"] <= max_group_es_y_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'group_es_y_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting Group ES Height-Y (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying Group ES Height-Y (MOA) filter: {e}")
+        
         # POA Horizontal-X filter
         if self.poi_x_min.text() and self.poi_x_max.text():
             try:
@@ -1521,6 +1637,28 @@ class DataAnalysisWidget(QWidget):
             except Exception as e:
                 print(f"Error applying POA Horizontal-X filter: {e}")
         
+        # POA Horizontal-X MOA filter
+        if self.poi_x_moa_min.text() and self.poi_x_moa_max.text():
+            try:
+                min_poi_x_moa = float(self.poi_x_moa_min.text())
+                max_poi_x_moa = float(self.poi_x_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "poi_x_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["poi_x_moa"].notna()
+                    mask = mask & (filtered_df["poi_x_moa"] >= min_poi_x_moa)
+                    mask = mask & (filtered_df["poi_x_moa"] <= max_poi_x_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'poi_x_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting POA Horizontal-X (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying POA Horizontal-X (MOA) filter: {e}")
+        
         # POA Vertical-Y filter
         if self.poi_y_min.text() and self.poi_y_max.text():
             try:
@@ -1542,6 +1680,28 @@ class DataAnalysisWidget(QWidget):
                 print(f"Error converting POA Vertical-Y filter values: {e}")
             except Exception as e:
                 print(f"Error applying POA Vertical-Y filter: {e}")
+        
+        # POA Vertical-Y MOA filter
+        if self.poi_y_moa_min.text() and self.poi_y_moa_max.text():
+            try:
+                min_poi_y_moa = float(self.poi_y_moa_min.text())
+                max_poi_y_moa = float(self.poi_y_moa_max.text())
+                
+                # Check if the column exists in the dataframe
+                if "poi_y_moa" in filtered_df.columns:
+                    # Handle NaN values by creating a mask that excludes them
+                    mask = filtered_df["poi_y_moa"].notna()
+                    mask = mask & (filtered_df["poi_y_moa"] >= min_poi_y_moa)
+                    mask = mask & (filtered_df["poi_y_moa"] <= max_poi_y_moa)
+                    
+                    # Apply the mask to filter the dataframe
+                    filtered_df = filtered_df[mask]
+                else:
+                    print("Warning: 'poi_y_moa' column not found in the data")
+            except ValueError as e:
+                print(f"Error converting POA Vertical-Y (MOA) filter values: {e}")
+            except Exception as e:
+                print(f"Error applying POA Vertical-Y (MOA) filter: {e}")
         
         # Apply Results Velocity filters
         
@@ -1942,11 +2102,11 @@ class DataAnalysisWidget(QWidget):
         self.accuracy_canvas.axes.plot(x, df['group_es_moa'], 'o-', color=color, label='Group Size (MOA)')
         self.accuracy_canvas.axes.tick_params(axis='y', labelcolor=color)
         
-        # Create a second y-axis for mean radius
+        # Create a second y-axis for Group ES Height-Y (MOA)
         ax2 = self.accuracy_canvas.axes.twinx()
         color = 'tab:red'
-        ax2.set_ylabel('Mean Radius (mm)', color=color)
-        ax2.plot(x, df['mean_radius_mm'], 'o-', color=color, label='Mean Radius (mm)')
+        ax2.set_ylabel('Group ES Vertical (MOA)', color=color)
+        ax2.plot(x, df['group_es_y_moa'], 'o-', color=color, label='Group ES Vertical (MOA)')
         ax2.tick_params(axis='y', labelcolor=color)
         
         # Set x-axis labels
@@ -1954,7 +2114,7 @@ class DataAnalysisWidget(QWidget):
         self.accuracy_canvas.axes.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
         # Add a title
-        self.accuracy_canvas.axes.set_title('Group Size and Mean Radius vs. Powder Charge')
+        self.accuracy_canvas.axes.set_title('Group Size and Group ES Vertical vs. Powder Charge')
         
         # Add a legend
         lines1, labels1 = self.accuracy_canvas.axes.get_legend_handles_labels()
@@ -2039,10 +2199,10 @@ class DataAnalysisWidget(QWidget):
         ax1.set_xticks(x)
         ax1.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
-        # Create a second y-axis for Mean Radius
+        # Create a second y-axis for Group ES Height-Y (MOA)
         ax2 = ax1.twinx()
-        ax2.set_ylabel('Mean Radius (mm)', color=colors['mean_radius_mm'])
-        ax2.plot(x, df['mean_radius_mm'], 'o-', color=colors['mean_radius_mm'], label='Mean Radius (mm)')
+        ax2.set_ylabel('Group ES Vertical (MOA)', color=colors['mean_radius_mm'])
+        ax2.plot(x, df['group_es_y_moa'], 'o-', color=colors['mean_radius_mm'], label='Group ES Vertical (MOA)')
         ax2.tick_params(axis='y', labelcolor=colors['mean_radius_mm'])
         
         # Create a third y-axis for Velocity
