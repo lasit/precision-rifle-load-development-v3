@@ -194,11 +194,11 @@ class CreateTestWidget(QWidget):
         self.barrel_length_spin.setRange(0, 99.9)
         self.barrel_length_spin.setDecimals(1)
         self.barrel_length_spin.setSingleStep(0.5)
-        self.barrel_length_spin.setValue(24.0)  # Default value
+        self.barrel_length_spin.setValue(20.0)  # Default value
         layout.addRow("Barrel Length (in):", self.barrel_length_spin)
         
         # Twist rate (text input)
-        self.twist_rate_edit = QLineEdit()
+        self.twist_rate_edit = QLineEdit("1:8")  # Default value
         self.twist_rate_edit.setPlaceholderText("e.g., 1:8 or 1:10")
         layout.addRow("Twist Rate:", self.twist_rate_edit)
         
@@ -238,10 +238,11 @@ class CreateTestWidget(QWidget):
         
         # Bushing Size (numeric input)
         self.bushing_size_spin = QDoubleSpinBox()
-        self.bushing_size_spin.setRange(0.001, 9.999)
+        self.bushing_size_spin.setRange(0.0, 9.999)  # Start from 0.0 to allow "empty" state
         self.bushing_size_spin.setDecimals(3)
         self.bushing_size_spin.setSingleStep(0.001)
-        self.bushing_size_spin.setValue(0.245)  # Default value
+        self.bushing_size_spin.setSpecialValueText(" ")  # Display empty space when value is minimum
+        self.bushing_size_spin.setValue(0.0)  # Set to minimum to appear empty
         case_layout.addRow("Bushing Size:", self.bushing_size_spin)
         
         # Shoulder Bump (numeric input)
@@ -302,10 +303,11 @@ class CreateTestWidget(QWidget):
         
         # Powder Charge (numeric input)
         self.powder_charge_spin = QDoubleSpinBox()
-        self.powder_charge_spin.setRange(0.01, 999.99)
+        self.powder_charge_spin.setRange(0.0, 999.99)  # Start from 0.0 to allow "empty" state
         self.powder_charge_spin.setDecimals(2)
         self.powder_charge_spin.setSingleStep(0.1)
-        self.powder_charge_spin.setValue(23.5)  # Default value
+        self.powder_charge_spin.setSpecialValueText(" ")  # Display empty space when value is minimum
+        self.powder_charge_spin.setValue(0.0)  # Set to minimum to appear empty
         powder_layout.addRow("Powder Charge (gr):", self.powder_charge_spin)
         
         # Powder Lot (text input)
@@ -318,18 +320,20 @@ class CreateTestWidget(QWidget):
         
         # Cartridge OAL (numeric input)
         self.cartridge_oal_spin = QDoubleSpinBox()
-        self.cartridge_oal_spin.setRange(0.001, 9.999)
+        self.cartridge_oal_spin.setRange(0.0, 9.999)  # Start from 0.0 to allow "empty" state
         self.cartridge_oal_spin.setDecimals(3)
         self.cartridge_oal_spin.setSingleStep(0.001)
-        self.cartridge_oal_spin.setValue(2.410)  # Default value
+        self.cartridge_oal_spin.setSpecialValueText(" ")  # Display empty space when value is minimum
+        self.cartridge_oal_spin.setValue(0.0)  # Set to minimum to appear empty
         cartridge_layout.addRow("Cartridge OAL (in):", self.cartridge_oal_spin)
         
         # Cartridge BTO (numeric input)
         self.cartridge_bto_spin = QDoubleSpinBox()
-        self.cartridge_bto_spin.setRange(0.001, 9.999)
+        self.cartridge_bto_spin.setRange(0.0, 9.999)  # Start from 0.0 to allow "empty" state
         self.cartridge_bto_spin.setDecimals(3)
         self.cartridge_bto_spin.setSingleStep(0.001)
-        self.cartridge_bto_spin.setValue(1.784)  # Default value
+        self.cartridge_bto_spin.setSpecialValueText(" ")  # Display empty space when value is minimum
+        self.cartridge_bto_spin.setValue(0.0)  # Set to minimum to appear empty
         cartridge_layout.addRow("Cartridge BTO (in):", self.cartridge_bto_spin)
         
         # Primer Tab
@@ -603,32 +607,11 @@ class CreateTestWidget(QWidget):
                 pass # Ignore error if directory couldn't be removed
 
     def clear_form(self):
-        """Clear the form after successful creation"""
+        """Clear only date and notes fields after successful creation, preserving other values"""
+        # Reset date to current date
         self.date_edit.setDate(QDate.currentDate())
-        self.notes_edit.clear()  # This works for QTextEdit too
         
-        # Reset platform fields
-        self.barrel_length_spin.setValue(24.0)
-        self.twist_rate_edit.clear()
+        # Clear notes
+        self.notes_edit.clear()
         
-        # Reset case fields
-        self.case_lot_edit.clear()
-        self.neck_turned_combo.setCurrentIndex(0)  # "No"
-        self.brass_sizing_combo.setCurrentIndex(0)  # "Full"
-        self.bushing_size_spin.setValue(0.245)
-        self.shoulder_bump_spin.setValue(1.5)
-        
-        # Reset bullet fields
-        self.bullet_weight_spin.setValue(75.0)
-        self.bullet_lot_edit.clear()
-        
-        # Reset powder fields
-        self.powder_charge_spin.setValue(23.5)
-        self.powder_lot_edit.clear()
-        
-        # Reset cartridge fields
-        self.cartridge_oal_spin.setValue(2.410)
-        self.cartridge_bto_spin.setValue(1.784)
-        
-        # Reset primer fields
-        self.primer_lot_edit.clear()
+        # All other fields are preserved to make it easier to create multiple similar tests

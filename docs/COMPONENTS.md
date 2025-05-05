@@ -112,7 +112,9 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 
 The Create Test module (`pyqt_app/modules/create_test.py`) allows users to create new tests. It:
 
-- Provides a form for entering test parameters
+- Provides a form for entering test parameters with user-friendly default values (Barrel Length: 20, Twist Rate: "1:8")
+- Displays empty fields for Bushing size, Powder Charge, Cartridge OAL, and Cartridge B2O
+- Preserves field values between test creations for faster creation of multiple similar tests
 - Validates input data
 - Generates a unique test ID
 - Creates a new test file
