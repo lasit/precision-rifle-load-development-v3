@@ -419,6 +419,26 @@ class CreateTestWidget(QWidget):
         
         return folder_name
 
+    def get_unique_test_id(self, base_test_id):
+        """
+        Generate a unique test ID by appending a suffix if the base ID already exists.
+        
+        Args:
+            base_test_id (str): The initial test ID
+            
+        Returns:
+            str: A unique test ID
+        """
+        test_id = base_test_id
+        counter = 1
+        
+        # Check if the directory exists and append a suffix until we find a unique name
+        while os.path.exists(os.path.join(self.tests_dir, test_id)):
+            test_id = f"{base_test_id} - {counter}"
+            counter += 1
+            
+        return test_id
+    
     def create_test(self):
         """Gathers data, creates folder, and saves initial group.yaml"""
         
@@ -474,13 +494,12 @@ class CreateTestWidget(QWidget):
             return
 
         # --- Generate Test ID and Create Folder ---
-        test_id = self.generate_test_id(test_data)
+        base_test_id = self.generate_test_id(test_data)
+        
+        # Get a unique test ID by appending a suffix if necessary
+        test_id = self.get_unique_test_id(base_test_id)
         new_test_dir = os.path.join(self.tests_dir, test_id)
-
-        if os.path.exists(new_test_dir):
-            QMessageBox.warning(self, "Directory Exists", f"A test directory already exists for:\n{test_id}\nPlease modify inputs or delete the existing directory.")
-            return
-
+        
         try:
             os.makedirs(new_test_dir)
         except Exception as e:

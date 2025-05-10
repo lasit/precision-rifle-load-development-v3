@@ -117,6 +117,7 @@ The Create Test module (`pyqt_app/modules/create_test.py`) allows users to creat
 - Preserves field values between test creations for faster creation of multiple similar tests
 - Validates input data
 - Generates a unique test ID
+- Automatically handles duplicate test IDs by appending a suffix (e.g., " - 1", " - 2")
 - Creates a new test file
 - Emits a signal when a test is created
 

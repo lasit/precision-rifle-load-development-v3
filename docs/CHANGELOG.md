@@ -23,6 +23,7 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Updated Accuracy and Combined plots to use Group ES Vertical (MOA) instead of Mean Radius (mm)
 - Changed default values in Create Test tab (Barrel Length: 20, Twist Rate: "1:8", empty fields for Bushing size, Powder Charge, Cartridge OAL, and Cartridge B2O)
 - Modified Create Test tab to preserve field values between test creations for faster creation of multiple similar tests
+- Added automatic handling of duplicate test IDs by appending a suffix (e.g., " - 1", " - 2") to create unique folder names
 - Test selection feature in Data Analysis module allowing users to include/exclude specific tests from analysis
 - Improved filter layout with reorganized sections for better usability
 - Scrollable visualization area for larger graph displays
