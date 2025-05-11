@@ -67,9 +67,10 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
 
 - Displays test data in a table with comprehensive columns including environment data and MOA measurements
 - Provides filtering options for test data with calendar widgets for date selection
-- Generates charts and visualizations for accuracy and velocity metrics
+- Generates charts and visualizations for accuracy, velocity, and seating depth metrics
 - Allows filtering by various parameters including group size, velocity, shot count, and MOA values
 - Features updated Accuracy and Combined plots that use Group ES Vertical (MOA) instead of Mean Radius (mm)
+- Includes a dedicated Seating Depth tab that plots Group Size (MOA) against Bullet to Ogive (mm) distance
 - Enables selective inclusion/exclusion of specific tests from analysis via checkboxes
 - Provides bulk selection controls (Select All, Deselect All, Toggle Selection)
 - Preserves selection state when applying filters

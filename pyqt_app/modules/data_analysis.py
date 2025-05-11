@@ -820,6 +820,19 @@ class DataAnalysisWidget(QWidget):
         
         viz_tabs.addTab(velocity_tab, "Velocity")
         
+        # Seating Depth tab
+        seating_depth_tab = QWidget()
+        seating_depth_layout = QVBoxLayout(seating_depth_tab)
+        
+        # Seating Depth plot
+        self.seating_depth_canvas = MatplotlibCanvas(self, width=5, height=4, dpi=100)
+        seating_depth_toolbar = NavigationToolbar(self.seating_depth_canvas, self)
+        
+        seating_depth_layout.addWidget(seating_depth_toolbar)
+        seating_depth_layout.addWidget(self.seating_depth_canvas)
+        
+        viz_tabs.addTab(seating_depth_tab, "Seating Depth")
+        
         # Combined tab
         combined_tab = QWidget()
         combined_layout = QVBoxLayout(combined_tab)
@@ -2083,6 +2096,9 @@ class DataAnalysisWidget(QWidget):
         # Update velocity plot
         self.update_velocity_plot(plot_df)
         
+        # Update seating depth plot
+        self.update_seating_depth_plot(plot_df)
+        
         # Update combined plot
         self.update_combined_plot(plot_df)
     
@@ -2169,6 +2185,76 @@ class DataAnalysisWidget(QWidget):
         # Redraw the canvas
         self.velocity_canvas.draw()
     
+    def update_seating_depth_plot(self, df):
+        """Update the seating depth plot with the given data"""
+        # Clear the figure and create a new axes
+        self.seating_depth_canvas.fig.clear()
+        self.seating_depth_canvas.axes = self.seating_depth_canvas.fig.add_subplot(111)
+        
+        # Check if we have valid B2O data
+        if 'b2o_in' not in df.columns or df['b2o_in'].isna().all():
+            self.seating_depth_canvas.axes.set_title('No B2O data available for visualization')
+            self.seating_depth_canvas.draw()
+            return
+        
+        # Sort data by B2O for a cleaner plot
+        plot_df = df.sort_values('b2o_in')
+        
+        # Create the plot
+        color = 'tab:blue'
+        self.seating_depth_canvas.axes.set_xlabel('Bullet to Ogive (in)')
+        self.seating_depth_canvas.axes.set_ylabel('Group Size (MOA)', color=color)
+        self.seating_depth_canvas.axes.scatter(plot_df['b2o_in'], plot_df['group_es_moa'], color=color, s=100, alpha=0.8)
+        self.seating_depth_canvas.axes.plot(plot_df['b2o_in'], plot_df['group_es_moa'], '-', color=color, alpha=0.6, label='Group Size (MOA)')
+        self.seating_depth_canvas.axes.tick_params(axis='y', labelcolor=color)
+        
+        # Add a grid
+        self.seating_depth_canvas.axes.grid(True, linestyle='--', alpha=0.7)
+        
+        # Add trend line
+        try:
+            # Convert to numeric if needed
+            x_data = pd.to_numeric(plot_df['b2o_in'], errors='coerce')
+            y_data = pd.to_numeric(plot_df['group_es_moa'], errors='coerce')
+            
+            # Remove NaN values
+            mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+            x_data = x_data[mask]
+            y_data = y_data[mask]
+            
+            if len(x_data) >= 2:
+                # Calculate trend line
+                z = np.polyfit(x_data, y_data, 1)
+                p = np.poly1d(z)
+                
+                # Add trend line to plot
+                x_range = np.linspace(min(x_data), max(x_data), 100)
+                self.seating_depth_canvas.axes.plot(x_range, p(x_range), "--", color=color, alpha=0.8)
+                
+                # Add trend line equation
+                slope, intercept = z
+                equation = f"y = {slope:.4f}x + {intercept:.4f}"
+                self.seating_depth_canvas.axes.annotate(
+                    equation,
+                    xy=(0.05, 0.95),
+                    xycoords='axes fraction',
+                    fontsize=10,
+                    color=color,
+                    backgroundcolor='w',
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8)
+                )
+        except Exception as e:
+            print(f"Error adding trend line for seating depth plot: {e}")
+        
+        # Add a title
+        self.seating_depth_canvas.axes.set_title('Group Size vs. Bullet to Ogive Distance')
+        
+        # Adjust layout
+        self.seating_depth_canvas.fig.tight_layout()
+        
+        # Redraw the canvas
+        self.seating_depth_canvas.draw()
+    
     def update_combined_plot(self, df):
         """Update the combined plot with the given data"""
         # Clear the figure and create a new axes
@@ -2252,6 +2338,12 @@ class DataAnalysisWidget(QWidget):
         self.velocity_canvas.axes = self.velocity_canvas.fig.add_subplot(111)
         self.velocity_canvas.axes.set_title('Not enough data for visualization')
         self.velocity_canvas.draw()
+        
+        # Clear seating depth plot
+        self.seating_depth_canvas.fig.clear()
+        self.seating_depth_canvas.axes = self.seating_depth_canvas.fig.add_subplot(111)
+        self.seating_depth_canvas.axes.set_title('Not enough data for visualization')
+        self.seating_depth_canvas.draw()
         
         # Clear combined plot
         self.combined_canvas.fig.clear()
