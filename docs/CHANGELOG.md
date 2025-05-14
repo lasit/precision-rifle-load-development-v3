@@ -25,6 +25,7 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Modified Create Test tab to preserve field values between test creations for faster creation of multiple similar tests
 - Added automatic handling of duplicate test IDs by appending a suffix (e.g., " - 1", " - 2") to create unique folder names
 - Added new "Seating Depth" tab in Data Analysis that plots Group Size (MOA) against Bullet to Ogive (mm) distance
+- Added a dedicated "Database Settings" button to the main window for easier access to database configuration on all platforms
 - Test selection feature in Data Analysis module allowing users to include/exclude specific tests from analysis
 - Improved filter layout with reorganized sections for better usability
 - Scrollable visualization area for larger graph displays

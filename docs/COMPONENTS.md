@@ -8,8 +8,10 @@ The main window (`pyqt_app/main.py`) is the central component of the application
 
 - Creates and manages the tab-based interface
 - Sets up the menu bar with File and Help menus
+- Provides a dedicated "Database Settings" button for cross-platform access to database configuration
 - Coordinates communication between modules
 - Handles settings and database management
+- Displays the active database in both the window title and status bar
 
 ### Key Methods
 

@@ -7,7 +7,7 @@ Main entry point for the application
 import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QVBoxLayout, QWidget,
-                            QLabel, QStatusBar)
+                            QLabel, QStatusBar, QPushButton, QHBoxLayout, QStyle)
 from PyQt6.QtGui import QIcon, QAction, QFont
 from PyQt6.QtCore import Qt
 
@@ -41,6 +41,34 @@ class MainWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
+        
+        # Add a settings button at the top for cross-platform access
+        settings_layout = QHBoxLayout()
+        
+        # Create a more prominent settings button with an icon
+        self.settings_button = QPushButton("Database Settings")
+        self.settings_button.setToolTip("Configure database settings and select test directories")
+        self.settings_button.setMinimumWidth(150)  # Make the button wider
+        
+        # Use a standard icon if available
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView)
+        if not icon.isNull():
+            self.settings_button.setIcon(icon)
+        
+        # Connect to the settings dialog
+        self.settings_button.clicked.connect(self.show_settings_dialog)
+        
+        # Add a label to explain what the button does
+        settings_label = QLabel("Select where test data is stored:")
+        settings_label.setBuddy(self.settings_button)
+        
+        # Add widgets to layout
+        settings_layout.addWidget(settings_label)
+        settings_layout.addWidget(self.settings_button)
+        settings_layout.addStretch()
+        
+        # Add to main layout
+        self.layout.addLayout(settings_layout)
         
         # Create tab widget
         self.tabs = QTabWidget()
