@@ -72,12 +72,21 @@ def extract_test_info_from_path(test_path):
         primer_idx = coal_idx + 2
         primer = parts[primer_idx] if len(parts) > primer_idx else "Unknown"
         
-        # Extract numeric values
-        distance_value = float(re.search(r'(\d+)', distance).group(1))
-        bullet_weight_value = float(re.search(r'(\d+\.?\d*)', bullet_weight).group(1))
-        powder_charge_value = float(re.search(r'(\d+\.?\d*)', powder_charge).group(1))
-        coal_value = float(re.search(r'(\d+\.?\d*)', coal).group(1))
-        b2o_value = float(re.search(r'(\d+\.?\d*)', b2o).group(1))
+        # Extract numeric values with proper null checking
+        distance_match = re.search(r'(\d+)', distance)
+        distance_value = float(distance_match.group(1)) if distance_match else 0
+        
+        bullet_weight_match = re.search(r'(\d+\.?\d*)', bullet_weight)
+        bullet_weight_value = float(bullet_weight_match.group(1)) if bullet_weight_match else 0
+        
+        powder_charge_match = re.search(r'(\d+\.?\d*)', powder_charge)
+        powder_charge_value = float(powder_charge_match.group(1)) if powder_charge_match else 0
+        
+        coal_match = re.search(r'(\d+\.?\d*)', coal)
+        coal_value = float(coal_match.group(1)) if coal_match else 0
+        
+        b2o_match = re.search(r'(\d+\.?\d*)', b2o)
+        b2o_value = float(b2o_match.group(1)) if b2o_match else 0
         
         # Create and return the test info dictionary
         return {
@@ -102,8 +111,9 @@ def extract_test_info_from_path(test_path):
             'b2o_in': b2o_value,
             'primer': primer
         }
-    except (ValueError, IndexError) as e:
+    except (ValueError, IndexError, AttributeError) as e:
         # If parsing fails, return a minimal dictionary with the test_id
+        print(f"Warning: Failed to parse test directory name: {dir_name}, error: {e}")
         return {
             'test_id': dir_name,
             'date': 'Unknown',
@@ -142,86 +152,88 @@ def load_group_data(test_path):
     
     if not os.path.exists(group_file):
         return {
-            'group_es_mm': 0,
-            'group_es_moa': 0,
-            'group_es_x_mm': 0,
+            'group_es_mm': None,
+            'group_es_moa': None,
+            'group_es_x_mm': None,
             'group_es_x_moa': None,
-            'group_es_y_mm': 0,
+            'group_es_y_mm': None,
             'group_es_y_moa': None,
-            'mean_radius_mm': 0,
+            'mean_radius_mm': None,
             'mean_radius_moa': None,
-            'poi_x_mm': 0,
+            'poi_x_mm': None,
             'poi_x_moa': None,
-            'poi_y_mm': 0,
+            'poi_y_mm': None,
             'poi_y_moa': None,
-            'shots': 0,
-            'avg_velocity_fps': 0,
-            'sd_fps': 0,
-            'es_fps': 0,
-            'temperature_c': 0,
-            'humidity_pct': 0,
-            'pressure_hpa': 0,
-            'wind_speed_ms': 0,
-            'wind_direction': '',
-            'light_conditions': '',
-            'barrel_length_in': 0,
-            'twist_rate': '',
-            'bullet_lot': '',
-            'powder_lot': '',
-            'powder_model': '',
-            'case_brand': '',
-            'case_lot': '',
-            'neck_turned': '',
-            'brass_sizing': '',
-            'bushing_size': 0,
-            'shoulder_bump': 0,
-            'primer_brand': '',
-            'primer_model': '',
-            'primer_lot': ''
+            'shots': None,
+            'avg_velocity_fps': None,
+            'sd_fps': None,
+            'es_fps': None,
+            'temperature_c': None,
+            'humidity_pct': None,
+            'pressure_hpa': None,
+            'wind_speed_ms': None,
+            'wind_direction': None,
+            'light_conditions': None,
+            'barrel_length_in': None,
+            'twist_rate': None,
+            'bullet_lot': None,
+            'powder_lot': None,
+            'powder_model': None,
+            'case_brand': None,
+            'case_lot': None,
+            'neck_turned': None,
+            'brass_sizing': None,
+            'bushing_size': None,
+            'shoulder_bump': None,
+            'primer_brand': None,
+            'primer_model': None,
+            'primer_lot': None
         }
     
     try:
         with open(group_file, 'r') as f:
             yaml_data = yaml.safe_load(f)
         
-        if not isinstance(yaml_data, dict):
+        # Check if yaml_data is None (empty file) or not a dictionary
+        if yaml_data is None or not isinstance(yaml_data, dict):
+            print(f"Warning: Invalid or empty YAML file: {group_file}")
             return {
-                'group_es_mm': 0,
-                'group_es_moa': 0,
-                'group_es_x_mm': 0,
+                'group_es_mm': None,
+                'group_es_moa': None,
+                'group_es_x_mm': None,
                 'group_es_x_moa': None,
-                'group_es_y_mm': 0,
+                'group_es_y_mm': None,
                 'group_es_y_moa': None,
-                'mean_radius_mm': 0,
+                'mean_radius_mm': None,
                 'mean_radius_moa': None,
-                'poi_x_mm': 0,
+                'poi_x_mm': None,
                 'poi_x_moa': None,
-                'poi_y_mm': 0,
+                'poi_y_mm': None,
                 'poi_y_moa': None,
-                'shots': 0,
-                'avg_velocity_fps': 0,
-                'sd_fps': 0,
-                'es_fps': 0,
-                'temperature_c': 0,
-                'humidity_pct': 0,
-                'pressure_hpa': 0,
-                'wind_speed_ms': 0,
-                'wind_direction': '',
-                'light_conditions': '',
-                'barrel_length_in': 0,
-                'twist_rate': '',
-                'bullet_lot': '',
-                'powder_lot': '',
-                'powder_model': '',
-                'case_brand': '',
-                'case_lot': '',
-                'neck_turned': '',
-                'brass_sizing': '',
-                'bushing_size': 0,
-                'shoulder_bump': 0,
-                'primer_brand': '',
-                'primer_model': '',
-                'primer_lot': ''
+                'shots': None,
+                'avg_velocity_fps': None,
+                'sd_fps': None,
+                'es_fps': None,
+                'temperature_c': None,
+                'humidity_pct': None,
+                'pressure_hpa': None,
+                'wind_speed_ms': None,
+                'wind_direction': None,
+                'light_conditions': None,
+                'barrel_length_in': None,
+                'twist_rate': None,
+                'bullet_lot': None,
+                'powder_lot': None,
+                'powder_model': None,
+                'case_brand': None,
+                'case_lot': None,
+                'neck_turned': None,
+                'brass_sizing': None,
+                'bushing_size': None,
+                'shoulder_bump': None,
+                'primer_brand': None,
+                'primer_model': None,
+                'primer_lot': None
             }
         
         # Extract relevant group data from the nested structure
@@ -244,77 +256,92 @@ def load_group_data(test_path):
         primer_data = ammo_data.get('primer', {})
         
         return {
-            'group_es_mm': group_data.get('group_es_mm', 0),
-            'group_es_moa': group_data.get('group_es_moa', 0),
-            'group_es_x_mm': group_data.get('group_es_x_mm', 0),
-            'group_es_x_moa': group_data.get('group_es_x_moa', None),
-            'group_es_y_mm': group_data.get('group_es_y_mm', 0),
-            'group_es_y_moa': group_data.get('group_es_y_moa', None),
-            'mean_radius_mm': group_data.get('mean_radius_mm', 0),
-            'mean_radius_moa': group_data.get('mean_radius_moa', None),
-            'poi_x_mm': group_data.get('poi_x_mm', 0),
-            'poi_x_moa': group_data.get('poi_x_moa', None),
-            'poi_y_mm': group_data.get('poi_y_mm', 0),
-            'poi_y_moa': group_data.get('poi_y_moa', None),
-            'shots': group_data.get('shots', 0),
-            'avg_velocity_fps': chrono_data.get('avg_velocity_fps', 0),
-            'sd_fps': chrono_data.get('sd_fps', 0),
-            'es_fps': chrono_data.get('es_fps', 0),
-            'temperature_c': environment_data.get('temperature_c', 0),
-            'humidity_pct': environment_data.get('humidity_percent', 0),
-            'pressure_hpa': environment_data.get('pressure_hpa', 0),
-            'wind_speed_ms': environment_data.get('wind_speed_mps', 0),
-            'wind_direction': environment_data.get('wind_dir_deg', ''),
-            'light_conditions': environment_data.get('weather', ''),
+            'group_es_mm': group_data.get('group_es_mm'),
+            'group_es_moa': group_data.get('group_es_moa'),
+            'group_es_x_mm': group_data.get('group_es_x_mm'),
+            'group_es_x_moa': group_data.get('group_es_x_moa'),
+            'group_es_y_mm': group_data.get('group_es_y_mm'),
+            'group_es_y_moa': group_data.get('group_es_y_moa'),
+            'mean_radius_mm': group_data.get('mean_radius_mm'),
+            'mean_radius_moa': group_data.get('mean_radius_moa'),
+            'poi_x_mm': group_data.get('poi_x_mm'),
+            'poi_x_moa': group_data.get('poi_x_moa'),
+            'poi_y_mm': group_data.get('poi_y_mm'),
+            'poi_y_moa': group_data.get('poi_y_moa'),
+            'shots': group_data.get('shots'),
+            'avg_velocity_fps': chrono_data.get('avg_velocity_fps'),
+            'sd_fps': chrono_data.get('sd_fps'),
+            'es_fps': chrono_data.get('es_fps'),
+            'temperature_c': environment_data.get('temperature_c'),
+            'humidity_pct': environment_data.get('humidity_percent'),
+            'pressure_hpa': environment_data.get('pressure_hpa'),
+            'wind_speed_ms': environment_data.get('wind_speed_mps'),
+            'wind_direction': environment_data.get('wind_dir_deg'),
+            'light_conditions': environment_data.get('weather'),
             
             # Platform data
-            'barrel_length_in': platform_data.get('barrel_length_in', 0),
-            'twist_rate': platform_data.get('twist_rate', ''),
+            'barrel_length_in': platform_data.get('barrel_length_in'),
+            'twist_rate': platform_data.get('twist_rate'),
             
             # Bullet data
-            'bullet_lot': bullet_data.get('lot', ''),
+            'bullet_lot': bullet_data.get('lot'),
             
             # Powder data
-            'powder_lot': powder_data.get('lot', ''),
-            'powder_model': powder_data.get('model', ''),
+            'powder_lot': powder_data.get('lot'),
+            'powder_model': powder_data.get('model'),
             
             # Case data
-            'case_brand': case_data.get('brand', ''),
-            'case_lot': case_data.get('lot', ''),
-            'neck_turned': case_data.get('neck_turned', ''),
-            'brass_sizing': case_data.get('brass_sizing', ''),
-            'bushing_size': case_data.get('bushing_size', 0),
-            'shoulder_bump': case_data.get('shoulder_bump', 0),
+            'case_brand': case_data.get('brand'),
+            'case_lot': case_data.get('lot'),
+            'neck_turned': case_data.get('neck_turned'),
+            'brass_sizing': case_data.get('brass_sizing'),
+            'bushing_size': case_data.get('bushing_size'),
+            'shoulder_bump': case_data.get('shoulder_bump'),
             
             # Primer data
-            'primer_brand': primer_data.get('brand', ''),
-            'primer_model': primer_data.get('model', ''),
-            'primer_lot': primer_data.get('lot', '')
+            'primer_brand': primer_data.get('brand'),
+            'primer_model': primer_data.get('model'),
+            'primer_lot': primer_data.get('lot')
         }
     except Exception as e:
+        print(f"Error loading group data from {group_file}: {e}")
         return {
-            'group_es_mm': 0,
-            'group_es_moa': 0,
-            'group_es_x_mm': 0,
+            'group_es_mm': None,
+            'group_es_moa': None,
+            'group_es_x_mm': None,
             'group_es_x_moa': None,
-            'group_es_y_mm': 0,
+            'group_es_y_mm': None,
             'group_es_y_moa': None,
-            'mean_radius_mm': 0,
+            'mean_radius_mm': None,
             'mean_radius_moa': None,
-            'poi_x_mm': 0,
+            'poi_x_mm': None,
             'poi_x_moa': None,
-            'poi_y_mm': 0,
+            'poi_y_mm': None,
             'poi_y_moa': None,
-            'shots': 0,
-            'avg_velocity_fps': 0,
-            'sd_fps': 0,
-            'es_fps': 0,
-            'temperature_c': 0,
-            'humidity_pct': 0,
-            'pressure_hpa': 0,
-            'wind_speed_ms': 0,
-            'wind_direction': '',
-            'light_conditions': ''
+            'shots': None,
+            'avg_velocity_fps': None,
+            'sd_fps': None,
+            'es_fps': None,
+            'temperature_c': None,
+            'humidity_pct': None,
+            'pressure_hpa': None,
+            'wind_speed_ms': None,
+            'wind_direction': None,
+            'light_conditions': None,
+            'barrel_length_in': None,
+            'twist_rate': None,
+            'bullet_lot': None,
+            'powder_lot': None,
+            'powder_model': None,
+            'case_brand': None,
+            'case_lot': None,
+            'neck_turned': None,
+            'brass_sizing': None,
+            'bushing_size': None,
+            'shoulder_bump': None,
+            'primer_brand': None,
+            'primer_model': None,
+            'primer_lot': None
         }
 
 
@@ -333,9 +360,9 @@ def load_chronograph_data(test_path):
     
     if not csv_files:
         return {
-            'avg_velocity_fps': 0,
-            'sd_fps': 0,
-            'es_fps': 0
+            'avg_velocity_fps': None,
+            'sd_fps': None,
+            'es_fps': None
         }
     
     try:
@@ -350,9 +377,9 @@ def load_chronograph_data(test_path):
         
         if len(velocities) == 0:
             return {
-                'avg_velocity_fps': 0,
-                'sd_fps': 0,
-                'es_fps': 0
+                'avg_velocity_fps': None,
+                'sd_fps': None,
+                'es_fps': None
             }
         
         # Calculate velocity statistics
@@ -367,9 +394,9 @@ def load_chronograph_data(test_path):
         }
     except Exception as e:
         return {
-            'avg_velocity_fps': 0,
-            'sd_fps': 0,
-            'es_fps': 0
+            'avg_velocity_fps': None,
+            'sd_fps': None,
+            'es_fps': None
         }
 
 
@@ -389,6 +416,8 @@ def load_all_test_data(tests_dir=None):
         settings_manager = SettingsManager.get_instance()
         tests_dir = settings_manager.get_tests_directory()
     
+    print(f"DEBUG: Loading test data from directory: {tests_dir}")
+    
     # Check if the directory exists
     if not os.path.isdir(tests_dir):
         print(f"Warning: Tests directory does not exist: {tests_dir}")
@@ -398,32 +427,50 @@ def load_all_test_data(tests_dir=None):
     try:
         test_dirs = [os.path.join(tests_dir, d) for d in os.listdir(tests_dir) 
                     if os.path.isdir(os.path.join(tests_dir, d)) and not d.startswith('.')]
+        print(f"DEBUG: Found {len(test_dirs)} test directories")
     except Exception as e:
         print(f"Error listing test directories: {e}")
         return pd.DataFrame()
     
     # Load data from each test directory
     test_data = []
+    successful_loads = 0
+    failed_loads = 0
+    
     for test_dir in test_dirs:
-        # Extract test info from the directory path
-        test_info = extract_test_info_from_path(test_dir)
-        
-        # Load group data
-        group_data = load_group_data(test_dir)
-        
-        # We'll use the group.yaml chrono data instead of the CSV data
-        # as it's more reliable and consistent with what's shown in the View Test tab
-        
-        # Combine all data (group_data already contains chrono data)
-        test_data.append({**test_info, **group_data})
+        try:
+            # Extract test info from the directory path
+            test_info = extract_test_info_from_path(test_dir)
+            
+            # Load group data
+            group_data = load_group_data(test_dir)
+            
+            # We'll use the group.yaml chrono data instead of the CSV data
+            # as it's more reliable and consistent with what's shown in the View Test tab
+            
+            # Combine all data (group_data already contains chrono data)
+            test_data.append({**test_info, **group_data})
+            successful_loads += 1
+            
+        except Exception as e:
+            print(f"Error loading test data from {test_dir}: {e}")
+            failed_loads += 1
+            continue
+    
+    print(f"DEBUG: Successfully loaded {successful_loads} tests, failed to load {failed_loads} tests")
     
     # Create a DataFrame from the test data
-    df = pd.DataFrame(test_data)
-    
-    # Sort by date and powder charge
-    df = df.sort_values(['date', 'powder_charge_gr'])
-    
-    return df
+    if test_data:
+        df = pd.DataFrame(test_data)
+        
+        # Sort by date and powder charge
+        df = df.sort_values(['date', 'powder_charge_gr'])
+        
+        print(f"DEBUG: Created DataFrame with {len(df)} rows and {len(df.columns)} columns")
+        return df
+    else:
+        print("DEBUG: No test data loaded, returning empty DataFrame")
+        return pd.DataFrame()
 
 
 if __name__ == "__main__":

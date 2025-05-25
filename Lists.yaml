@@ -13,8 +13,10 @@ distance:
 - 50m
 calibre:
 - '223'
+- 6.5 CM
 rifle:
 - Tikka T3X
+- Tikka T3X ACE Target
 case_brand:
 - Sako
 - Hornady
@@ -25,9 +27,10 @@ powder_model:
 - '2208'
 - 2206H
 bullet_brand:
-- Hornady
 - Berger
+- Hornady
 bullet_model:
+- VLD
 - ELD-M
 primer_brand:
 - RWS

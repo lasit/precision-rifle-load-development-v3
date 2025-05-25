@@ -2134,11 +2134,18 @@ class DataAnalysisWidget(QWidget):
         self.accuracy_canvas.axes.plot(x, df['group_es_moa'], 'o-', color=color, label='Group Size (MOA)')
         self.accuracy_canvas.axes.tick_params(axis='y', labelcolor=color)
         
-        # Create a second y-axis for Group ES Height-Y (MOA)
+        # Create a second y-axis for Mean Radius (mm) if available, otherwise use group_es_mm
         ax2 = self.accuracy_canvas.axes.twinx()
         color = 'tab:red'
-        ax2.set_ylabel('Group ES Vertical (MOA)', color=color)
-        ax2.plot(x, df['group_es_y_moa'], 'o-', color=color, label='Group ES Vertical (MOA)')
+        if 'group_es_y_moa' in df.columns and not df['group_es_y_moa'].isna().all():
+            ax2.set_ylabel('Group ES Vertical (MOA)', color=color)
+            ax2.plot(x, df['group_es_y_moa'], 'o-', color=color, label='Group ES Vertical (MOA)')
+        elif 'mean_radius_mm' in df.columns and not df['mean_radius_mm'].isna().all():
+            ax2.set_ylabel('Mean Radius (mm)', color=color)
+            ax2.plot(x, df['mean_radius_mm'], 'o-', color=color, label='Mean Radius (mm)')
+        else:
+            ax2.set_ylabel('Group Size (mm)', color=color)
+            ax2.plot(x, df['group_es_mm'], 'o-', color=color, label='Group Size (mm)')
         ax2.tick_params(axis='y', labelcolor=color)
         
         # Set x-axis labels
@@ -2146,7 +2153,7 @@ class DataAnalysisWidget(QWidget):
         self.accuracy_canvas.axes.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
         # Add a title
-        self.accuracy_canvas.axes.set_title('Group Size and Group ES Vertical vs. Powder Charge')
+        self.accuracy_canvas.axes.set_title('Accuracy Metrics vs. Powder Charge')
         
         # Add a legend
         lines1, labels1 = self.accuracy_canvas.axes.get_legend_handles_labels()
@@ -2301,10 +2308,17 @@ class DataAnalysisWidget(QWidget):
         ax1.set_xticks(x)
         ax1.set_xticklabels([f"{charge:.2f}gr" for charge in df['powder_charge_gr']], rotation=45)
         
-        # Create a second y-axis for Group ES Height-Y (MOA)
+        # Create a second y-axis for Mean Radius (mm) if available, otherwise use group_es_mm
         ax2 = ax1.twinx()
-        ax2.set_ylabel('Group ES Vertical (MOA)', color=colors['mean_radius_mm'])
-        ax2.plot(x, df['group_es_y_moa'], 'o-', color=colors['mean_radius_mm'], label='Group ES Vertical (MOA)')
+        if 'group_es_y_moa' in df.columns and not df['group_es_y_moa'].isna().all():
+            ax2.set_ylabel('Group ES Vertical (MOA)', color=colors['mean_radius_mm'])
+            ax2.plot(x, df['group_es_y_moa'], 'o-', color=colors['mean_radius_mm'], label='Group ES Vertical (MOA)')
+        elif 'mean_radius_mm' in df.columns and not df['mean_radius_mm'].isna().all():
+            ax2.set_ylabel('Mean Radius (mm)', color=colors['mean_radius_mm'])
+            ax2.plot(x, df['mean_radius_mm'], 'o-', color=colors['mean_radius_mm'], label='Mean Radius (mm)')
+        else:
+            ax2.set_ylabel('Group Size (mm)', color=colors['mean_radius_mm'])
+            ax2.plot(x, df['group_es_mm'], 'o-', color=colors['mean_radius_mm'], label='Group Size (mm)')
         ax2.tick_params(axis='y', labelcolor=colors['mean_radius_mm'])
         
         # Create a third y-axis for Velocity

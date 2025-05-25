@@ -439,6 +439,29 @@ class CreateTestWidget(QWidget):
             
         return test_id
     
+    def _remove_none_values(self, data):
+        """
+        Recursively remove keys with None values from a dictionary.
+        
+        Args:
+            data: The data structure to clean (dict, list, or other)
+            
+        Returns:
+            The cleaned data structure with None values removed
+        """
+        if isinstance(data, dict):
+            cleaned_dict = {}
+            for key, value in data.items():
+                cleaned_value = self._remove_none_values(value)
+                # Only include the key if the value is not None and not an empty dict
+                if cleaned_value is not None and not (isinstance(cleaned_value, dict) and not cleaned_value):
+                    cleaned_dict[key] = cleaned_value
+            return cleaned_dict
+        elif isinstance(data, list):
+            return [self._remove_none_values(item) for item in data if item is not None]
+        else:
+            return data
+    
     def create_test(self):
         """Gathers data, creates folder, and saves initial group.yaml"""
         
@@ -531,7 +554,6 @@ class CreateTestWidget(QWidget):
             
             # Restructure data for YAML format
             yaml_data = {
-                'test_id': test_id,
                 'date': test_data['date'],
                 'distance_m': test_data['distance_m'],
                 'notes': test_data['notes'],
@@ -579,14 +601,19 @@ class CreateTestWidget(QWidget):
                     'weather': None
                 },
                 'group': {
+                    'shots': None,
                     'group_es_mm': None,
                     'group_es_moa': None,
                     'mean_radius_mm': None,
+                    'mean_radius_moa': None,
                     'group_es_x_mm': None,
+                    'group_es_x_moa': None,
                     'group_es_y_mm': None,
+                    'group_es_y_moa': None,
                     'poi_x_mm': None,
+                    'poi_x_moa': None,
                     'poi_y_mm': None,
-                    'shots': None
+                    'poi_y_moa': None
                 },
                 'chrono': {
                     'avg_velocity_fps': None,
@@ -595,21 +622,12 @@ class CreateTestWidget(QWidget):
                 }
             }
             
-            # Clean up None values before saving for a cleaner YAML
-            def remove_none_values(d):
-                if not isinstance(d, dict):
-                    return d
-                cleaned_dict = {}
-                for k, v in d.items():
-                    cleaned_v = remove_none_values(v)
-                    if cleaned_v is not None and not (isinstance(cleaned_v, dict) and not cleaned_v):
-                        cleaned_dict[k] = cleaned_v
-                return cleaned_dict
+            # Remove None values to keep the YAML file clean
+            clean_yaml_data = self._remove_none_values(yaml_data)
             
-            cleaned_data = remove_none_values(yaml_data)
-
+            # Save the YAML data without None values for a cleaner file
             with open(group_yaml_path, 'w') as f:
-                yaml.dump(cleaned_data, f, default_flow_style=False, sort_keys=False)
+                yaml.dump(clean_yaml_data, f, default_flow_style=False, sort_keys=False, indent=2)
             
             # Emit signal to notify other widgets that a new test has been created
             self.testCreated.emit()
