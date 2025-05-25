@@ -12,10 +12,15 @@ A PyQt application for tracking and analyzing precision rifle load development d
   - Target results (group size, mean radius, POA)
   - Velocity data (average, SD, ES)
 - Generate unique test IDs based on load components
+- **Intelligent folder renaming**: Automatically detects changes to key test parameters and offers to rename test folders to maintain consistency
 - Form validation to ensure complete data entry
 - Search and filter existing tests
 - Data visualization with interactive charts
 - Component list management
+- Multiple database support with Google Drive integration
+- Zoomable target images with pan functionality
+- Environment data copy/paste between tests
+- Wind drift plotting and analysis tools
 
 ## Installation
 

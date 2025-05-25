@@ -53,6 +53,12 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Increased font sizes for better readability in Wind Plots
 - Added "Powder Model" filter to both View Test and Data Analysis tabs, positioned below "Powder Brand" filter
 - Fixed data loading issue where powder model changes weren't reflected in the filtered tests table
+- **Intelligent Folder Renaming System**: Comprehensive folder renaming functionality that automatically detects changes to folder-name-determining fields and offers to rename test folders accordingly
+- **Smart Change Detection**: Monitors changes to all key test parameters (Date, Distance, Calibre, Rifle, Case Brand, Bullet Brand/Model/Weight, Powder Brand/Model/Charge, Cartridge OAL/BTO, Primer Brand/Model)
+- **User-Controlled Renaming**: Always asks for user confirmation before renaming folders with detailed change summary and three options (Yes/No/Cancel)
+- **Conflict Resolution**: Automatically handles naming conflicts by appending version suffixes (_v2, _v3, etc.) when target folders already exist
+- **Data Integrity Protection**: Ensures all test files (YAML, images, notes) stay together during folder rename operations
+- **Real-time Feedback**: Provides clear success/failure messages and updates the UI immediately after folder operations
 
 ### Changed
 - Improved settings management with platform-specific storage locations

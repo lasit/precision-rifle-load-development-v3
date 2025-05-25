@@ -11,11 +11,12 @@ import os
 import sys
 import yaml
 import pandas as pd
+import shutil
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                              QPushButton, QFormLayout, QLineEdit, QGroupBox, QScrollArea,
                              QMessageBox, QStyle, QDoubleSpinBox, QDateEdit, QTextEdit,
                              QSlider, QToolBar, QSizePolicy, QTabWidget, QSplitter,
-                             QTableView)
+                             QTableView, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import Qt, pyqtSignal, QDate, QPoint, QRect, QSize, QRectF
 from PyQt6.QtGui import QPixmap, QPainter, QWheelEvent, QMouseEvent, QTransform, QCursor
 
@@ -2346,6 +2347,196 @@ class ViewTestWidget(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Deletion Error", f"Failed to delete test {self.current_test_id}:\n{e}")
     
+    def extract_folder_name_data(self, data):
+        """Extract only the fields that affect folder naming from test data"""
+        folder_data = {}
+        
+        # Date
+        folder_data['date'] = data.get('date', '')
+        
+        # Distance
+        folder_data['distance_m'] = data.get('distance_m', 0)
+        
+        # Platform data
+        platform_data = data.get('platform', {})
+        folder_data['calibre'] = platform_data.get('calibre', '')
+        folder_data['rifle'] = platform_data.get('rifle', '')
+        
+        # Ammunition data
+        ammo_data = data.get('ammo', {})
+        
+        # Case
+        case_data = ammo_data.get('case', {})
+        folder_data['case_brand'] = case_data.get('brand', '')
+        
+        # Bullet
+        bullet_data = ammo_data.get('bullet', {})
+        folder_data['bullet_brand'] = bullet_data.get('brand', '')
+        folder_data['bullet_model'] = bullet_data.get('model', '')
+        folder_data['bullet_weight_gr'] = bullet_data.get('weight_gr', 0)
+        
+        # Powder
+        powder_data = ammo_data.get('powder', {})
+        folder_data['powder_brand'] = powder_data.get('brand', '')
+        folder_data['powder_model'] = powder_data.get('model', '')
+        folder_data['powder_charge_gr'] = powder_data.get('charge_gr', 0)
+        
+        # Cartridge
+        folder_data['coal_in'] = ammo_data.get('coal_in', 0)
+        folder_data['b2o_in'] = ammo_data.get('b2o_in', 0)
+        
+        # Primer
+        primer_data = ammo_data.get('primer', {})
+        folder_data['primer_brand'] = primer_data.get('brand', '')
+        folder_data['primer_model'] = primer_data.get('model', '')
+        
+        return folder_data
+    
+    def generate_folder_name_from_data(self, data):
+        """Generate folder name using the same logic as create_test.py"""
+        # Import the generate_test_id function from create_test module
+        from .create_test import CreateTestWidget
+        
+        # Create a temporary instance to use the generate_test_id method
+        temp_widget = CreateTestWidget()
+        return temp_widget.generate_test_id(data)
+    
+    def detect_folder_name_changes(self, old_data, new_data):
+        """
+        Compare old and new data to detect changes in fields that affect folder naming
+        Returns: (has_changes: bool, old_folder_name: str, new_folder_name: str, changes: list)
+        """
+        # Extract folder-relevant data from both datasets
+        old_folder_data = self.extract_folder_name_data(old_data)
+        new_folder_data = self.extract_folder_name_data(new_data)
+        
+        # Generate folder names
+        old_folder_name = self.generate_folder_name_from_data(old_folder_data)
+        new_folder_name = self.generate_folder_name_from_data(new_folder_data)
+        
+        # Check if folder names are different
+        has_changes = old_folder_name != new_folder_name
+        
+        # If there are changes, identify what changed
+        changes = []
+        if has_changes:
+            for key in old_folder_data:
+                old_val = old_folder_data[key]
+                new_val = new_folder_data[key]
+                if old_val != new_val:
+                    # Format the change description
+                    field_name = key.replace('_', ' ').title()
+                    if key == 'distance_m':
+                        field_name = 'Distance'
+                        old_val = f"{old_val}m" if old_val else "Unknown"
+                        new_val = f"{new_val}m" if new_val else "Unknown"
+                    elif key.endswith('_gr'):
+                        field_name = field_name.replace(' Gr', ' (gr)')
+                        old_val = f"{old_val:.2f}gr" if old_val else "0.00gr"
+                        new_val = f"{new_val:.2f}gr" if new_val else "0.00gr"
+                    elif key.endswith('_in'):
+                        field_name = field_name.replace(' In', ' (in)')
+                        old_val = f"{old_val:.3f}in" if old_val else "0.000in"
+                        new_val = f"{new_val:.3f}in" if new_val else "0.000in"
+                    
+                    changes.append(f"• {field_name}: {old_val} → {new_val}")
+        
+        return has_changes, old_folder_name, new_folder_name, changes
+    
+    def show_folder_rename_dialog(self, old_folder, new_folder, changes):
+        """Show detailed confirmation dialog for folder renaming"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Folder Rename Required")
+        dialog.setModal(True)
+        dialog.resize(600, 400)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Header
+        header_label = QLabel("The following changes will require renaming the test folder:")
+        header_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
+        layout.addWidget(header_label)
+        
+        # Changes list
+        changes_text = "\n".join(changes)
+        changes_label = QLabel(changes_text)
+        changes_label.setStyleSheet("margin: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; color: black;")
+        changes_label.setWordWrap(True)
+        layout.addWidget(changes_label)
+        
+        # Folder names
+        folder_info = QLabel(f"Current folder: {old_folder}\n\nNew folder: {new_folder}")
+        folder_info.setStyleSheet("margin: 10px; font-family: monospace; background-color: #f8f8f8; padding: 10px; border-radius: 5px; color: black;")
+        folder_info.setWordWrap(True)
+        layout.addWidget(folder_info)
+        
+        # Question
+        question_label = QLabel("Do you want to rename the folder to match the updated data?")
+        question_label.setStyleSheet("font-weight: bold; margin: 10px 0;")
+        layout.addWidget(question_label)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        yes_button = QPushButton("Yes, Rename")
+        yes_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; } QPushButton:hover { background-color: #45a049; }")
+        yes_button.clicked.connect(lambda: dialog.done(QDialog.DialogCode.Accepted))
+        
+        no_button = QPushButton("No, Keep Old Name")
+        no_button.setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 8px 16px; border: none; border-radius: 4px; } QPushButton:hover { background-color: #da190b; }")
+        no_button.clicked.connect(lambda: dialog.done(QDialog.DialogCode.Rejected))
+        
+        cancel_button = QPushButton("Cancel Save")
+        cancel_button.setStyleSheet("QPushButton { background-color: #757575; color: white; padding: 8px 16px; border: none; border-radius: 4px; } QPushButton:hover { background-color: #616161; }")
+        cancel_button.clicked.connect(lambda: dialog.done(2))  # Custom code for cancel
+        
+        button_layout.addWidget(yes_button)
+        button_layout.addWidget(no_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        
+        return dialog.exec()
+    
+    def get_unique_folder_name(self, base_name):
+        """Generate a unique folder name by appending a suffix if needed"""
+        folder_name = base_name
+        counter = 2
+        
+        while os.path.exists(os.path.join(self.tests_dir, folder_name)):
+            folder_name = f"{base_name}_v{counter}"
+            counter += 1
+        
+        return folder_name
+    
+    def rename_test_folder(self, old_name, new_name):
+        """
+        Safely rename a test folder with conflict resolution
+        Returns: (success: bool, final_name: str, error_message: str)
+        """
+        old_path = os.path.join(self.tests_dir, old_name)
+        new_path = os.path.join(self.tests_dir, new_name)
+        
+        # Check if source folder exists
+        if not os.path.exists(old_path):
+            return False, old_name, f"Source folder does not exist: {old_name}"
+        
+        # Handle conflicts by finding a unique name
+        final_new_name = self.get_unique_folder_name(new_name)
+        final_new_path = os.path.join(self.tests_dir, final_new_name)
+        
+        try:
+            # Use shutil.move for cross-platform compatibility
+            shutil.move(old_path, final_new_path)
+            
+            # Verify the move was successful
+            if os.path.exists(final_new_path) and not os.path.exists(old_path):
+                return True, final_new_name, ""
+            else:
+                return False, old_name, "Folder move verification failed"
+                
+        except Exception as e:
+            return False, old_name, f"Failed to rename folder: {str(e)}"
+
     def save_changes(self):
         """Save the modified test data back to group.yaml"""
         if not self.current_test_id:
@@ -2617,6 +2808,21 @@ class ViewTestWidget(QWidget):
 
         final_data_to_save = remove_none_values(updated_data)
 
+        # --- Check for folder name changes before saving ---
+        has_changes, old_folder_name, new_folder_name, changes = self.detect_folder_name_changes(self.test_data, final_data_to_save)
+        
+        should_rename_folder = False
+        if has_changes:
+            # Show confirmation dialog
+            dialog_result = self.show_folder_rename_dialog(old_folder_name, new_folder_name, changes)
+            
+            if dialog_result == QDialog.DialogCode.Accepted:
+                should_rename_folder = True
+            elif dialog_result == QDialog.DialogCode.Rejected:
+                should_rename_folder = False
+            else:  # Cancel save (dialog_result == 2)
+                return  # Exit without saving
+
         # --- Write updated data back to group.yaml ---
         test_dir = os.path.join(self.tests_dir, self.current_test_id)
         group_yaml_path = os.path.join(test_dir, "group.yaml")
@@ -2625,6 +2831,34 @@ class ViewTestWidget(QWidget):
             with open(group_yaml_path, 'w') as f:
                 yaml.dump(final_data_to_save, f, default_flow_style=False, sort_keys=False, indent=2) # Added indent
             self.test_data = final_data_to_save # Update internal data state after successful save
+            
+            # --- Handle folder renaming if requested ---
+            final_test_id = self.current_test_id  # Default to current ID
+            if should_rename_folder:
+                success, final_folder_name, error_msg = self.rename_test_folder(self.current_test_id, new_folder_name)
+                
+                if success:
+                    # Update current test ID to the new folder name
+                    final_test_id = final_folder_name
+                    self.current_test_id = final_folder_name
+                    
+                    # Show success message with final folder name
+                    if final_folder_name != new_folder_name:
+                        QMessageBox.information(self, "Folder Renamed", 
+                                              f"Folder renamed successfully!\n\n"
+                                              f"Original name: {old_folder_name}\n"
+                                              f"New name: {final_folder_name}\n\n"
+                                              f"Note: A version suffix was added because the target folder already existed.")
+                    else:
+                        QMessageBox.information(self, "Folder Renamed", 
+                                              f"Folder renamed successfully!\n\n"
+                                              f"Old name: {old_folder_name}\n"
+                                              f"New name: {final_folder_name}")
+                else:
+                    # Show error message but continue with save
+                    QMessageBox.warning(self, "Folder Rename Failed", 
+                                       f"Data was saved successfully, but folder renaming failed:\n\n{error_msg}\n\n"
+                                       f"The test data is still saved in the original folder: {self.current_test_id}")
             
             # Emit signal to notify other widgets that a test has been updated
             self.testUpdated.emit()
@@ -2639,14 +2873,17 @@ class ViewTestWidget(QWidget):
             self._restore_filters(current_filters)
             self.apply_filters()
             
-            # Reselect the current test in the table
-            if self.current_test_id:
+            # Reselect the current test in the table (use final_test_id in case folder was renamed)
+            if final_test_id:
                 for row in range(self.filtered_data.shape[0]):
-                    if self.filtered_data.iloc[row]['test_id'] == self.current_test_id:
+                    if self.filtered_data.iloc[row]['test_id'] == final_test_id:
                         self.test_table.selectRow(row)
                         break
             
-            QMessageBox.information(self, "Save Successful", f"Changes saved successfully for {self.current_test_id}")
+            # Show save success message (only if no folder rename message was shown)
+            if not should_rename_folder:
+                QMessageBox.information(self, "Save Successful", f"Changes saved successfully for {final_test_id}")
+                
         except Exception as e:
             QMessageBox.critical(self, "Save Error", f"Failed to save changes for {self.current_test_id}:\n{e}")
 

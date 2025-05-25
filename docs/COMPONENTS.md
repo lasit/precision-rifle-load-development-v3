@@ -55,7 +55,7 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - `_restore_filters()`: Restores filter values from a dictionary
 - `on_table_selection_changed()`: Handles selection changes in the table view
 - `load_selected_test()`: Loads a test from a file
-- `save_changes()`: Saves changes to a test file
+- `save_changes()`: Saves changes to a test file with intelligent folder renaming
 - `refresh()`: Refreshes the list of available tests
 - `populate_test_ids()`: Refreshes the test data and updates the table model
 - `refresh_component_lists()`: Refreshes the component dropdown lists
@@ -64,6 +64,34 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - `_create_image_group()`: Creates the target image group with zoom and pan capabilities
 - `_create_results_target_group()`: Creates the Results Target group
 - `_create_results_velocity_group()`: Creates the Results Velocity group
+
+### Folder Renaming System
+
+The View Test module includes a comprehensive folder renaming system that automatically maintains consistency between test data and folder names:
+
+#### Key Folder Renaming Methods
+
+- `extract_folder_name_data()`: Extracts only the fields that affect folder naming from test data
+- `generate_folder_name_from_data()`: Generates folder name using the same logic as create_test.py
+- `detect_folder_name_changes()`: Compares old and new data to detect changes in folder-name-determining fields
+- `show_folder_rename_dialog()`: Shows detailed confirmation dialog for folder renaming with change summary
+- `get_unique_folder_name()`: Generates unique folder names by appending version suffixes when conflicts exist
+- `rename_test_folder()`: Safely renames test folders with comprehensive error handling and verification
+
+#### Monitored Fields for Folder Renaming
+
+The system monitors changes to all fields that affect the folder name structure:
+- **Test Information**: Date, Distance
+- **Platform**: Calibre, Rifle
+- **Ammunition Components**: Case Brand, Bullet Brand/Model/Weight, Powder Brand/Model/Charge, Cartridge OAL/BTO, Primer Brand/Model
+
+#### Folder Renaming Workflow
+
+1. **Change Detection**: When saving changes, the system compares old vs new data for folder-affecting fields
+2. **User Confirmation**: If changes are detected, a detailed dialog shows what changed and asks for confirmation
+3. **Safe Renaming**: If approved, the system safely renames the folder with conflict resolution
+4. **Data Integrity**: All test files (YAML, images, notes) are moved together to maintain data integrity
+5. **UI Updates**: The interface is immediately updated to reflect the new folder name
 
 ## Data Analysis Module
 
