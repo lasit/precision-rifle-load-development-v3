@@ -51,6 +51,8 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - Improved Wind Plots with correct clock time labels (03:00, 09:00, etc.)
 - Enhanced axis labels and removed redundant Y-axis label in Wind Plots
 - Increased font sizes for better readability in Wind Plots
+- Added "Powder Model" filter to both View Test and Data Analysis tabs, positioned below "Powder Brand" filter
+- Fixed data loading issue where powder model changes weren't reflected in the filtered tests table
 
 ### Changed
 - Improved settings management with platform-specific storage locations

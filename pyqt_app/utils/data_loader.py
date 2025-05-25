@@ -168,6 +168,7 @@ def load_group_data(test_path):
             'twist_rate': '',
             'bullet_lot': '',
             'powder_lot': '',
+            'powder_model': '',
             'case_brand': '',
             'case_lot': '',
             'neck_turned': '',
@@ -211,6 +212,7 @@ def load_group_data(test_path):
                 'twist_rate': '',
                 'bullet_lot': '',
                 'powder_lot': '',
+                'powder_model': '',
                 'case_brand': '',
                 'case_lot': '',
                 'neck_turned': '',
@@ -274,6 +276,7 @@ def load_group_data(test_path):
             
             # Powder data
             'powder_lot': powder_data.get('lot', ''),
+            'powder_model': powder_data.get('model', ''),
             
             # Case data
             'case_brand': case_data.get('brand', ''),

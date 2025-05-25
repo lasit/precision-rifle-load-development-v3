@@ -291,6 +291,11 @@ class ViewTestWidget(QWidget):
         self.powder_brand_filter_combo.addItem("All")
         ammo_layout.addRow("Powder Brand:", self.powder_brand_filter_combo)
         
+        # Powder model filter
+        self.powder_model_filter_combo = QComboBox()
+        self.powder_model_filter_combo.addItem("All")
+        ammo_layout.addRow("Powder Model:", self.powder_model_filter_combo)
+        
         # Powder charge range filter
         self.charge_min = QLineEdit()
         self.charge_max = QLineEdit()
@@ -816,6 +821,12 @@ class ViewTestWidget(QWidget):
         self.powder_brand_filter_combo.addItem("All")
         self.powder_brand_filter_combo.addItems([str(p) for p in powder_brands if pd.notna(p)])
         
+        # Powder model filter
+        powder_models = sorted(self.all_data["powder_model"].unique())
+        self.powder_model_filter_combo.clear()
+        self.powder_model_filter_combo.addItem("All")
+        self.powder_model_filter_combo.addItems([str(p) for p in powder_models if pd.notna(p)])
+        
         # Distance filter
         distances = sorted(self.all_data["distance_m"].unique())
         self.distance_filter_combo.clear()
@@ -880,6 +891,10 @@ class ViewTestWidget(QWidget):
         # Apply powder brand filter
         if self.powder_brand_filter_combo.currentText() != "All":
             filtered_df = filtered_df[filtered_df["powder_brand"] == self.powder_brand_filter_combo.currentText()]
+        
+        # Apply powder model filter
+        if self.powder_model_filter_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["powder_model"] == self.powder_model_filter_combo.currentText()]
         
         # Apply charge range filter
         if self.charge_min.text() and self.charge_max.text():
@@ -1148,6 +1163,7 @@ class ViewTestWidget(QWidget):
             'rifle': self.rifle_filter_combo.currentText(),
             'bullet_brand': self.bullet_brand_filter_combo.currentText(),
             'powder_brand': self.powder_brand_filter_combo.currentText(),
+            'powder_model': self.powder_model_filter_combo.currentText(),
             'distance': self.distance_filter_combo.currentText(),
             
             # Date range
@@ -1203,6 +1219,10 @@ class ViewTestWidget(QWidget):
         if index >= 0:
             self.powder_brand_filter_combo.setCurrentIndex(index)
             
+        index = self.powder_model_filter_combo.findText(filters['powder_model'])
+        if index >= 0:
+            self.powder_model_filter_combo.setCurrentIndex(index)
+            
         index = self.distance_filter_combo.findText(filters['distance'])
         if index >= 0:
             self.distance_filter_combo.setCurrentIndex(index)
@@ -1252,6 +1272,7 @@ class ViewTestWidget(QWidget):
         self.rifle_filter_combo.setCurrentIndex(0)
         self.bullet_brand_filter_combo.setCurrentIndex(0)
         self.powder_brand_filter_combo.setCurrentIndex(0)
+        self.powder_model_filter_combo.setCurrentIndex(0)
         self.distance_filter_combo.setCurrentIndex(0)
         
         # Reset Ammunition filters

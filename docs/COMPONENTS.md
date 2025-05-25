@@ -36,6 +36,8 @@ The View Test module (`pyqt_app/modules/view_test.py`) allows users to view and 
 - Preserves filter settings when saving changes
 - Uses component lists from Lists.yaml for dropdown options
 - Supports copying and pasting of environment data between tests
+- Includes "Powder Model" filter in the ammunition filtering section, positioned below "Powder Brand"
+- Preserves powder model filter state when saving changes to ensure table updates correctly
 
 ### Key Classes
 
@@ -88,6 +90,8 @@ The Data Analysis module (`pyqt_app/modules/data_analysis.py`) provides tools fo
   - Select up to three different parameters for the Y-axes with distinct colors
   - Generate trend lines with equations for each parameter
   - Create custom visualizations to explore relationships between any data points
+- Includes "Powder Model" filter in the ammunition filtering section, positioned below "Powder Brand"
+- Enhanced data loader to properly extract powder model information from YAML files for accurate table display
 
 ### Key Classes
 
@@ -256,6 +260,7 @@ The Data Loader (`pyqt_app/utils/data_loader.py`) handles loading and processing
 - Validates test data
 - Provides error handling for missing or invalid files
 - Supports loading from different database directories
+- Properly extracts powder model information from YAML files to ensure accurate table display
 
 ### Key Methods
 

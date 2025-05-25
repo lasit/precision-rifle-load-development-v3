@@ -432,6 +432,11 @@ class DataAnalysisWidget(QWidget):
         self.powder_brand_combo.addItem("All")
         ammo_layout.addRow("Powder Brand:", self.powder_brand_combo)
         
+        # Powder model filter
+        self.powder_model_combo = QComboBox()
+        self.powder_model_combo.addItem("All")
+        ammo_layout.addRow("Powder Model:", self.powder_model_combo)
+        
         # Powder charge range filter
         self.charge_min = QLineEdit()
         self.charge_max = QLineEdit()
@@ -1271,6 +1276,12 @@ class DataAnalysisWidget(QWidget):
         self.powder_brand_combo.clear()
         self.powder_brand_combo.addItem("All")
         self.powder_brand_combo.addItems(powder_brands)
+        
+        # Powder model filter
+        powder_models = sorted(self.all_data["powder_model"].unique())
+        self.powder_model_combo.clear()
+        self.powder_model_combo.addItem("All")
+        self.powder_model_combo.addItems([str(p) for p in powder_models if pd.notna(p)])
     
     def apply_filters(self):
         """Apply filters to the data"""
@@ -1333,6 +1344,10 @@ class DataAnalysisWidget(QWidget):
         # Apply powder brand filter
         if self.powder_brand_combo.currentText() != "All":
             filtered_df = filtered_df[filtered_df["powder_brand"] == self.powder_brand_combo.currentText()]
+        
+        # Apply powder model filter
+        if self.powder_model_combo.currentText() != "All":
+            filtered_df = filtered_df[filtered_df["powder_model"] == self.powder_model_combo.currentText()]
         
         # Apply charge range filter
         if self.charge_min.text() and self.charge_max.text():
@@ -1958,6 +1973,7 @@ class DataAnalysisWidget(QWidget):
         self.rifle_combo.setCurrentIndex(0)
         self.bullet_brand_combo.setCurrentIndex(0)
         self.powder_brand_combo.setCurrentIndex(0)
+        self.powder_model_combo.setCurrentIndex(0)
         
         # Reset date inputs to default values
         self.date_from.setDate(QDate.currentDate().addMonths(-1))  # Default to 1 month ago
