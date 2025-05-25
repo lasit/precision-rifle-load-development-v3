@@ -256,6 +256,21 @@ def load_group_data(test_path):
         primer_data = ammo_data.get('primer', {})
         
         return {
+            # Main test parameters from YAML (override directory parsing)
+            'date': yaml_data.get('date'),
+            'distance_m': yaml_data.get('distance_m'),
+            'calibre': platform_data.get('calibre'),
+            'rifle': platform_data.get('rifle'),
+            'bullet_brand': bullet_data.get('brand'),
+            'bullet_model': bullet_data.get('model'),
+            'bullet_weight_gr': bullet_data.get('weight_gr'),
+            'powder_brand': powder_data.get('brand'),
+            'powder_model': powder_data.get('model'),
+            'powder_charge_gr': powder_data.get('charge_gr'),
+            'coal_in': ammo_data.get('coal_in'),
+            'b2o_in': ammo_data.get('b2o_in'),
+            
+            # Group/target results
             'group_es_mm': group_data.get('group_es_mm'),
             'group_es_moa': group_data.get('group_es_moa'),
             'group_es_x_mm': group_data.get('group_es_x_mm'),
@@ -269,9 +284,13 @@ def load_group_data(test_path):
             'poi_y_mm': group_data.get('poi_y_mm'),
             'poi_y_moa': group_data.get('poi_y_moa'),
             'shots': group_data.get('shots'),
+            
+            # Velocity/chrono results
             'avg_velocity_fps': chrono_data.get('avg_velocity_fps'),
             'sd_fps': chrono_data.get('sd_fps'),
             'es_fps': chrono_data.get('es_fps'),
+            
+            # Environment data
             'temperature_c': environment_data.get('temperature_c'),
             'humidity_pct': environment_data.get('humidity_percent'),
             'pressure_hpa': environment_data.get('pressure_hpa'),
@@ -288,7 +307,6 @@ def load_group_data(test_path):
             
             # Powder data
             'powder_lot': powder_data.get('lot'),
-            'powder_model': powder_data.get('model'),
             
             # Case data
             'case_brand': case_data.get('brand'),
