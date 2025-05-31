@@ -39,12 +39,16 @@ primer_model:
 - '4033'
 - BR-4
 brass_sizing:
+- Neck Only with Bushing No Expander Ball
 - Neck Only with Bushing
 - Neck Only - no bushing
 - Full
 neck_turned:
 - 'No'
 - 'Yes'
+mandrel:
+- 'Yes'
+- 'No'
 sky:
 - Clear
 - Partly Cloudy

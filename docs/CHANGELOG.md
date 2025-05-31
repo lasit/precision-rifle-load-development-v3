@@ -66,6 +66,18 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - **Weather Conditions Consistency**: Ensured all weather/sky condition dropdowns use the centralized Lists.yaml configuration
 - **Dynamic Component Loading**: All dropdown fields now dynamically load from Lists.yaml with proper fallback mechanisms
 - **Admin Interface Enhancement**: Added neck_turned component management to the admin interface
+- **Mandrel Attributes**: Added mandrel and mandrel_size fields to case data
+  - New "Mandrel" dropdown (Yes/No) with default "Yes" in Create Test
+  - New "Mandrel Size" numeric input with 4 decimal precision (0.0000-0.9999)
+  - Added mandrel columns to filtered tests table (positioned after Shoulder Bump)
+  - Integrated mandrel management in Admin interface
+  - Updated data loader and YAML structure to support mandrel fields
+- **List Reordering in Admin**: Added "Move Up" and "Move Down" buttons
+  - Users can now reorder items in all component lists (Distance, Calibre, Rifle, etc.)
+  - Smart button states (disabled when at boundaries or no selection)
+  - Selection follows moved items for better UX
+  - Auto-save functionality preserves order in Lists.yaml
+  - Order is maintained across all dropdown menus in the application
 
 ### Changed
 - Improved settings management with platform-specific storage locations

@@ -185,6 +185,8 @@ def load_group_data(test_path):
             'brass_sizing': None,
             'bushing_size': None,
             'shoulder_bump': None,
+            'mandrel': None,
+            'mandrel_size': None,
             'primer_brand': None,
             'primer_model': None,
             'primer_lot': None
@@ -315,6 +317,8 @@ def load_group_data(test_path):
             'brass_sizing': case_data.get('brass_sizing'),
             'bushing_size': case_data.get('bushing_size'),
             'shoulder_bump': case_data.get('shoulder_bump'),
+            'mandrel': case_data.get('mandrel'),
+            'mandrel_size': case_data.get('mandrel_size'),
             
             # Primer data
             'primer_brand': primer_data.get('brand'),

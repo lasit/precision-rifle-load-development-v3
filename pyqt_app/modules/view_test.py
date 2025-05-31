@@ -1523,6 +1523,22 @@ class ViewTestWidget(QWidget):
         self.shoulder_bump_spin.setSingleStep(0.1)
         case_layout.addRow("Shoulder Bump (thou):", self.shoulder_bump_spin)
         
+        # Mandrel (dropdown)
+        self.mandrel_combo = QComboBox()
+        mandrel_list = self.component_lists.get('mandrel', [])
+        if mandrel_list:
+            self.mandrel_combo.addItems(mandrel_list)
+        else:
+            self.mandrel_combo.addItems(["No", "Yes"])  # Fallback
+        case_layout.addRow("Mandrel:", self.mandrel_combo)
+        
+        # Mandrel Size (numeric input)
+        self.mandrel_size_spin = QDoubleSpinBox()
+        self.mandrel_size_spin.setRange(0.0000, 0.9999)
+        self.mandrel_size_spin.setDecimals(4)
+        self.mandrel_size_spin.setSingleStep(0.0001)
+        case_layout.addRow("Mandrel Size:", self.mandrel_size_spin)
+        
         # Bullet Tab
         bullet_tab = QWidget()
         bullet_layout = QFormLayout(bullet_tab)
@@ -1979,6 +1995,20 @@ class ViewTestWidget(QWidget):
         if shoulder_bump is not None:
             try:
                 self.shoulder_bump_spin.setValue(float(shoulder_bump))
+            except (ValueError, TypeError):
+                pass
+        
+        # Set mandrel
+        mandrel = str(case_data.get('mandrel', 'No'))
+        index = self.mandrel_combo.findText(mandrel)
+        if index >= 0:
+            self.mandrel_combo.setCurrentIndex(index)
+        
+        # Set mandrel size
+        mandrel_size = case_data.get('mandrel_size')
+        if mandrel_size is not None:
+            try:
+                self.mandrel_size_spin.setValue(float(mandrel_size))
             except (ValueError, TypeError):
                 pass
         
@@ -2631,6 +2661,9 @@ class ViewTestWidget(QWidget):
         bushing_size_value = self.bushing_size_spin.value()
         case_data['bushing_size'] = bushing_size_value
         case_data['shoulder_bump'] = self.shoulder_bump_spin.value() if self.shoulder_bump_spin.value() > 0 else None
+        case_data['mandrel'] = self.mandrel_combo.currentText() or None
+        mandrel_size_value = self.mandrel_size_spin.value()
+        case_data['mandrel_size'] = mandrel_size_value if mandrel_size_value > 0.0000 else None
         if any(case_data.values()): ammo_data['case'] = case_data
         
         primer_data = {}

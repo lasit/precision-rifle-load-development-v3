@@ -69,6 +69,7 @@ class TestDataModel(QAbstractTableModel):
             "powder_brand", "powder_model", "powder_charge_gr", "powder_lot",
             "coal_in", "b2o_in", 
             "case_brand", "case_lot", "neck_turned", "brass_sizing", "bushing_size", "shoulder_bump",
+            "mandrel", "mandrel_size",
             "primer_brand", "primer_model", "primer_lot",
             
             # Results
@@ -205,6 +206,16 @@ class TestDataModel(QAbstractTableModel):
         """Update the model with new data"""
         self.beginResetModel()
         self._data = data
+        
+        # Ensure all columns exist in the dataframe
+        for col in self._display_columns:
+            if col not in self._data.columns:
+                self._data[col] = None
+        
+        # Add selection column (not displayed in the columns list)
+        if 'selected' not in self._data.columns:
+            self._data['selected'] = True
+            
         self.endResetModel()
 
 

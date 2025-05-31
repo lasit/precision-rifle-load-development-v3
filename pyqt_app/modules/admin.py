@@ -76,6 +76,21 @@ class ComponentListEditor(QWidget):
         self.delete_button.setEnabled(False)
         buttons_layout.addWidget(self.delete_button)
         
+        # Add separator
+        buttons_layout.addWidget(QLabel("|"))
+        
+        # Move Up button
+        self.move_up_button = QPushButton("Move Up")
+        self.move_up_button.clicked.connect(self.move_item_up)
+        self.move_up_button.setEnabled(False)
+        buttons_layout.addWidget(self.move_up_button)
+        
+        # Move Down button
+        self.move_down_button = QPushButton("Move Down")
+        self.move_down_button.clicked.connect(self.move_item_down)
+        self.move_down_button.setEnabled(False)
+        buttons_layout.addWidget(self.move_down_button)
+        
         form_layout.addRow("", buttons_layout)
         main_layout.addWidget(form_group)
     
@@ -96,10 +111,16 @@ class ComponentListEditor(QWidget):
             self.item_input.setText(self.items[row])
             self.update_button.setEnabled(True)
             self.delete_button.setEnabled(True)
+            
+            # Enable/disable move buttons based on position
+            self.move_up_button.setEnabled(row > 0)  # Can't move up if first item
+            self.move_down_button.setEnabled(row < len(self.items) - 1)  # Can't move down if last item
         else:
             self.item_input.clear()
             self.update_button.setEnabled(False)
             self.delete_button.setEnabled(False)
+            self.move_up_button.setEnabled(False)
+            self.move_down_button.setEnabled(False)
     
     def add_item(self):
         """Add a new item to the list"""
@@ -162,6 +183,42 @@ class ComponentListEditor(QWidget):
             self.delete_button.setEnabled(False)
             self.itemsChanged.emit()
     
+    def move_item_up(self):
+        """Move the selected item up in the list"""
+        current_row = self.list_widget.currentRow()
+        if current_row <= 0:  # Can't move up if first item or no selection
+            return
+        
+        # Swap items in the list
+        self.items[current_row], self.items[current_row - 1] = self.items[current_row - 1], self.items[current_row]
+        
+        # Refresh the list widget
+        self.refresh_list()
+        
+        # Maintain selection on the moved item (now at current_row - 1)
+        self.list_widget.setCurrentRow(current_row - 1)
+        
+        # Emit signal to save changes
+        self.itemsChanged.emit()
+    
+    def move_item_down(self):
+        """Move the selected item down in the list"""
+        current_row = self.list_widget.currentRow()
+        if current_row < 0 or current_row >= len(self.items) - 1:  # Can't move down if last item or no selection
+            return
+        
+        # Swap items in the list
+        self.items[current_row], self.items[current_row + 1] = self.items[current_row + 1], self.items[current_row]
+        
+        # Refresh the list widget
+        self.refresh_list()
+        
+        # Maintain selection on the moved item (now at current_row + 1)
+        self.list_widget.setCurrentRow(current_row + 1)
+        
+        # Emit signal to save changes
+        self.itemsChanged.emit()
+    
     def get_items(self):
         """Get the current items"""
         return self.items.copy()
@@ -193,6 +250,7 @@ class AdminWidget(QWidget):
             {"key": "primer_model", "name": "Primer Model"},
             {"key": "brass_sizing", "name": "Brass Sizing"},
             {"key": "neck_turned", "name": "Neck Turned"},
+            {"key": "mandrel", "name": "Mandrel"},
             {"key": "sky", "name": "Sky Conditions"}
         ]
         

@@ -147,6 +147,19 @@ class CreateTestWidget(QWidget):
             self.neck_turned_combo.addItems(neck_turned_list)
         else:
             self.neck_turned_combo.addItems(["No", "Yes"])  # Fallback
+            
+        # Mandrel
+        self.mandrel_combo.clear()
+        mandrel_list = self.component_lists.get('mandrel', [])
+        if mandrel_list:
+            self.mandrel_combo.addItems(mandrel_list)
+            # Set default to "Yes"
+            yes_index = self.mandrel_combo.findText("Yes")
+            if yes_index >= 0:
+                self.mandrel_combo.setCurrentIndex(yes_index)
+        else:
+            self.mandrel_combo.addItems(["No", "Yes"])  # Fallback
+            self.mandrel_combo.setCurrentText("Yes")  # Default to Yes
     
     def load_component_lists(self):
         """Load component lists from the YAML file"""
@@ -276,6 +289,29 @@ class CreateTestWidget(QWidget):
         self.shoulder_bump_spin.setSingleStep(0.1)
         self.shoulder_bump_spin.setValue(1.5)  # Default value
         case_layout.addRow("Shoulder Bump (thou):", self.shoulder_bump_spin)
+        
+        # Mandrel (dropdown)
+        self.mandrel_combo = QComboBox()
+        mandrel_list = self.component_lists.get('mandrel', [])
+        if mandrel_list:
+            self.mandrel_combo.addItems(mandrel_list)
+            # Set default to "Yes"
+            yes_index = self.mandrel_combo.findText("Yes")
+            if yes_index >= 0:
+                self.mandrel_combo.setCurrentIndex(yes_index)
+        else:
+            self.mandrel_combo.addItems(["No", "Yes"])  # Fallback
+            self.mandrel_combo.setCurrentText("Yes")  # Default to Yes
+        case_layout.addRow("Mandrel:", self.mandrel_combo)
+        
+        # Mandrel Size (numeric input)
+        self.mandrel_size_spin = QDoubleSpinBox()
+        self.mandrel_size_spin.setRange(0.0000, 0.9999)
+        self.mandrel_size_spin.setDecimals(4)
+        self.mandrel_size_spin.setSingleStep(0.0001)
+        self.mandrel_size_spin.setSpecialValueText(" ")  # Display empty space when value is minimum
+        self.mandrel_size_spin.setValue(0.0000)  # Set to minimum to appear empty
+        case_layout.addRow("Mandrel Size:", self.mandrel_size_spin)
         
         # Bullet Tab
         bullet_tab = QWidget()
@@ -566,6 +602,8 @@ class CreateTestWidget(QWidget):
             brass_sizing = self.brass_sizing_combo.currentText()
             bushing_size = self.bushing_size_spin.value()
             shoulder_bump = self.shoulder_bump_spin.value()
+            mandrel = self.mandrel_combo.currentText()
+            mandrel_size = self.mandrel_size_spin.value() if self.mandrel_size_spin.value() > 0.0000 else None
             
             # Get additional bullet data
             bullet_lot = self.bullet_lot_edit.text()
@@ -608,7 +646,9 @@ class CreateTestWidget(QWidget):
                         'neck_turned': neck_turned,
                         'brass_sizing': brass_sizing,
                         'bushing_size': bushing_size,
-                        'shoulder_bump': shoulder_bump
+                        'shoulder_bump': shoulder_bump,
+                        'mandrel': mandrel,
+                        'mandrel_size': mandrel_size
                     },
                     'primer': {
                         'brand': test_data['primer_brand'],
