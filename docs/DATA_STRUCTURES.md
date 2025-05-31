@@ -150,6 +150,27 @@ primers:
   - "Federal 205M"
   - "Winchester Small Rifle"
   
+# Brass Sizing
+brass_sizing:
+  - "Neck Only with Bushing"
+  - "Neck Only - no bushing"
+  - "Full"
+  
+# Neck Turned
+neck_turned:
+  - "No"
+  - "Yes"
+  
+# Sky Conditions
+sky:
+  - "Clear"
+  - "Partly Cloudy"
+  - "Cloudy"
+  - "Overcast"
+  - "Rain"
+  - "Snow"
+  - "Stormy"
+  
 # Distances
 distances:
   - "100m"

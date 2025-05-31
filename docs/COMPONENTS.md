@@ -214,10 +214,12 @@ The Wind Plots module (`pyqt_app/modules/wind_plot.py`) provides tools for creat
 
 The Admin module (`pyqt_app/modules/admin.py`) allows users to manage component lists. It:
 
-- Displays the current component lists
-- Allows adding, editing, and deleting components
-- Saves changes to the component list file
-- Emits a signal when component lists are updated
+- Displays the current component lists from Lists.yaml
+- Allows adding, editing, and deleting components for all component types
+- Manages all component types including: distance, calibre, rifle, case_brand, powder_brand, powder_model, bullet_brand, bullet_model, primer_brand, primer_model, brass_sizing, neck_turned, and sky conditions
+- Saves changes to the Lists.yaml file
+- Emits a signal when component lists are updated to refresh all dependent modules
+- Provides centralized management for all dropdown options used throughout the application
 
 ### Key Methods
 

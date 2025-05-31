@@ -192,6 +192,7 @@ class AdminWidget(QWidget):
             {"key": "primer_brand", "name": "Primer Brand"},
             {"key": "primer_model", "name": "Primer Model"},
             {"key": "brass_sizing", "name": "Brass Sizing"},
+            {"key": "neck_turned", "name": "Neck Turned"},
             {"key": "sky", "name": "Sky Conditions"}
         ]
         

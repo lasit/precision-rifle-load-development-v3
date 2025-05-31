@@ -42,6 +42,9 @@ brass_sizing:
 - Neck Only with Bushing
 - Neck Only - no bushing
 - Full
+neck_turned:
+- 'No'
+- 'Yes'
 sky:
 - Clear
 - Partly Cloudy

@@ -131,6 +131,22 @@ class CreateTestWidget(QWidget):
         primer_model_list = self.component_lists.get('primer_model', [])
         if primer_model_list:
             self.primer_model_combo.addItems(primer_model_list)
+            
+        # Brass Sizing
+        self.brass_sizing_combo.clear()
+        brass_sizing_list = self.component_lists.get('brass_sizing', [])
+        if brass_sizing_list:
+            self.brass_sizing_combo.addItems(brass_sizing_list)
+        else:
+            self.brass_sizing_combo.addItems(["Full", "Partial"])  # Fallback
+            
+        # Neck Turned
+        self.neck_turned_combo.clear()
+        neck_turned_list = self.component_lists.get('neck_turned', [])
+        if neck_turned_list:
+            self.neck_turned_combo.addItems(neck_turned_list)
+        else:
+            self.neck_turned_combo.addItems(["No", "Yes"])  # Fallback
     
     def load_component_lists(self):
         """Load component lists from the YAML file"""
@@ -228,12 +244,20 @@ class CreateTestWidget(QWidget):
         
         # Neck Turned (dropdown)
         self.neck_turned_combo = QComboBox()
-        self.neck_turned_combo.addItems(["No", "Yes"])
+        neck_turned_list = self.component_lists.get('neck_turned', [])
+        if neck_turned_list:
+            self.neck_turned_combo.addItems(neck_turned_list)
+        else:
+            self.neck_turned_combo.addItems(["No", "Yes"])  # Fallback
         case_layout.addRow("Neck Turned:", self.neck_turned_combo)
         
         # Brass Sizing (dropdown)
         self.brass_sizing_combo = QComboBox()
-        self.brass_sizing_combo.addItems(["Full", "Partial"])
+        brass_sizing_list = self.component_lists.get('brass_sizing', [])
+        if brass_sizing_list:
+            self.brass_sizing_combo.addItems(brass_sizing_list)
+        else:
+            self.brass_sizing_combo.addItems(["Full", "Partial"])  # Fallback
         case_layout.addRow("Brass Sizing:", self.brass_sizing_combo)
         
         # Bushing Size (numeric input)

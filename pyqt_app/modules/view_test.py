@@ -248,7 +248,12 @@ class ViewTestWidget(QWidget):
         
         # Distance filter
         self.distance_filter_combo = QComboBox()
-        self.distance_filter_combo.addItems(["All", "100m", "200m", "300m"])
+        self.distance_filter_combo.addItem("All")
+        distance_list = self.component_lists.get('distance', [])
+        if distance_list:
+            self.distance_filter_combo.addItems(distance_list)
+        else:
+            self.distance_filter_combo.addItems(["100m", "200m", "300m"])  # Fallback
         test_info_layout.addRow("Distance:", self.distance_filter_combo)
         
         filter_groups.addWidget(test_info_group)
@@ -1488,7 +1493,11 @@ class ViewTestWidget(QWidget):
         
         # Neck Turned (dropdown)
         self.neck_turned_combo = QComboBox()
-        self.neck_turned_combo.addItems(["No", "Yes"])
+        neck_turned_list = self.component_lists.get('neck_turned', [])
+        if neck_turned_list:
+            self.neck_turned_combo.addItems(neck_turned_list)
+        else:
+            self.neck_turned_combo.addItems(["No", "Yes"])  # Fallback
         case_layout.addRow("Neck Turned:", self.neck_turned_combo)
         
         # Brass Sizing (dropdown)

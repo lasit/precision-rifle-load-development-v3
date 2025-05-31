@@ -59,6 +59,13 @@ This document records all notable changes to the Precision Rifle Load Developmen
 - **Conflict Resolution**: Automatically handles naming conflicts by appending version suffixes (_v2, _v3, etc.) when target folders already exist
 - **Data Integrity Protection**: Ensures all test files (YAML, images, notes) stay together during folder rename operations
 - **Real-time Feedback**: Provides clear success/failure messages and updates the UI immediately after folder operations
+- **Component List Consistency**: Fixed hardcoded values throughout the application to use centralized Lists.yaml configuration
+- **Brass Sizing Synchronization**: Resolved mismatch between admin tab and create test form brass sizing options
+- **Neck Turned Component**: Added neck_turned component to Lists.yaml and updated all forms to use it consistently
+- **Distance Filter Integration**: Updated distance filters in all modules to use Lists.yaml instead of hardcoded values
+- **Weather Conditions Consistency**: Ensured all weather/sky condition dropdowns use the centralized Lists.yaml configuration
+- **Dynamic Component Loading**: All dropdown fields now dynamically load from Lists.yaml with proper fallback mechanisms
+- **Admin Interface Enhancement**: Added neck_turned component management to the admin interface
 
 ### Changed
 - Improved settings management with platform-specific storage locations
