@@ -1126,13 +1126,6 @@ class ViewTestWidget(QWidget):
             except Exception as e:
                 print(f"Error applying ES Velocity filter: {e}")
         
-        # At this point, all non-date filters have been applied
-        # Update the auto-range filters based on the current filtered data
-        # This will update the date range filter to show the min/max dates in the filtered data
-        self.disable_auto_range = True
-        self.update_filter_ranges(filtered_df)
-        self.disable_auto_range = False
-        
         # Now apply the date filter if needed
         if apply_date_filter and "date" in filtered_df.columns:
             try:
@@ -1205,6 +1198,56 @@ class ViewTestWidget(QWidget):
             'es_velocity_max': self.es_velocity_max.text()
         }
         return filters
+    
+    def _ensure_date_range_includes_test(self, test_id, current_filters):
+        """Ensure the date range filter includes the specified test's date"""
+        if not test_id or 'date' not in self.all_data.columns:
+            return
+        
+        # Find the test's date in the loaded data
+        test_row = self.all_data[self.all_data['test_id'] == test_id]
+        if test_row.empty:
+            return
+        
+        test_date_str = test_row.iloc[0]['date']
+        if pd.isna(test_date_str):
+            return
+        
+        try:
+            # Convert test date to QDate
+            test_date = QDate.fromString(test_date_str, "yyyy-MM-dd")
+            if not test_date.isValid():
+                return
+            
+            # Get current filter date range
+            current_from = current_filters['date_from']
+            current_to = current_filters['date_to']
+            
+            # Check if test date is outside the current range
+            needs_expansion = False
+            new_from = current_from
+            new_to = current_to
+            
+            if test_date < current_from:
+                new_from = test_date
+                needs_expansion = True
+                print(f"DEBUG: Expanding date range FROM {current_from.toString('yyyy-MM-dd')} to {test_date.toString('yyyy-MM-dd')} to include test {test_id}")
+            
+            if test_date > current_to:
+                new_to = test_date
+                needs_expansion = True
+                print(f"DEBUG: Expanding date range TO {current_to.toString('yyyy-MM-dd')} to {test_date.toString('yyyy-MM-dd')} to include test {test_id}")
+            
+            # Update the filters if expansion is needed
+            if needs_expansion:
+                current_filters['date_from'] = new_from
+                current_filters['date_to'] = new_to
+                print(f"DEBUG: Date range expanded to include test {test_id}: {new_from.toString('yyyy-MM-dd')} to {new_to.toString('yyyy-MM-dd')}")
+            else:
+                print(f"DEBUG: Test {test_id} date {test_date.toString('yyyy-MM-dd')} is already within range {current_from.toString('yyyy-MM-dd')} to {current_to.toString('yyyy-MM-dd')}")
+                
+        except Exception as e:
+            print(f"DEBUG: Error ensuring date range includes test {test_id}: {e}")
     
     def _restore_filters(self, filters):
         """Restore filter values from a dictionary"""
@@ -2905,22 +2948,53 @@ class ViewTestWidget(QWidget):
             # Emit signal to notify other widgets that a test has been updated
             self.testUpdated.emit()
             
-            # Save current filter values
+            # Save current filter values and current test selection
             current_filters = self._save_current_filters()
+            saved_test_id = final_test_id
+            
+            print(f"DEBUG: About to reload data after saving test: {saved_test_id}")
             
             # Reload the data to update the filtered table
             self.load_data()
+            
+            print(f"DEBUG: Data reloaded, all_data has {len(self.all_data)} tests")
+            print(f"DEBUG: Looking for test_id: {saved_test_id}")
+            
+            # Check if our test is in the loaded data
+            if saved_test_id:
+                test_found = saved_test_id in self.all_data['test_id'].values
+                print(f"DEBUG: Test {saved_test_id} found in all_data: {test_found}")
+            
+            # Before restoring filters, ensure the date range includes the saved test
+            self._ensure_date_range_includes_test(saved_test_id, current_filters)
             
             # Restore filter values and reapply filters
             self._restore_filters(current_filters)
             self.apply_filters()
             
+            print(f"DEBUG: After applying filters, filtered_data has {len(self.filtered_data)} tests")
+            
+            # Check if our test is in the filtered data
+            if saved_test_id:
+                test_found_filtered = saved_test_id in self.filtered_data['test_id'].values
+                print(f"DEBUG: Test {saved_test_id} found in filtered_data: {test_found_filtered}")
+            
             # Reselect the current test in the table (use final_test_id in case folder was renamed)
-            if final_test_id:
+            if saved_test_id:
+                test_reselected = False
                 for row in range(self.filtered_data.shape[0]):
-                    if self.filtered_data.iloc[row]['test_id'] == final_test_id:
+                    if self.filtered_data.iloc[row]['test_id'] == saved_test_id:
+                        print(f"DEBUG: Reselecting test {saved_test_id} at row {row}")
                         self.test_table.selectRow(row)
+                        # Ensure the test details are still loaded after the refresh
+                        self.current_test_id = saved_test_id
+                        self.populate_details()
+                        self.load_image()
+                        test_reselected = True
                         break
+                
+                if not test_reselected:
+                    print(f"DEBUG: Could not reselect test {saved_test_id} - not found in filtered data")
             
             # Show save success message (only if no folder rename message was shown)
             if not should_rename_folder:

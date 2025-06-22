@@ -463,15 +463,28 @@ def load_all_test_data(tests_dir=None):
         try:
             # Extract test info from the directory path
             test_info = extract_test_info_from_path(test_dir)
+            test_id = test_info['test_id']
             
             # Load group data
             group_data = load_group_data(test_dir)
             
-            # We'll use the group.yaml chrono data instead of the CSV data
-            # as it's more reliable and consistent with what's shown in the View Test tab
+            # Merge data with proper fallback logic
+            # Start with directory-parsed data as base
+            merged_data = test_info.copy()
             
-            # Combine all data (group_data already contains chrono data)
-            test_data.append({**test_info, **group_data})
+            # Override with YAML data where available, but keep directory data as fallback
+            for key, value in group_data.items():
+                if value is not None:
+                    merged_data[key] = value
+                # If YAML value is None but we have a directory-parsed value, keep the directory value
+                elif key in test_info and test_info[key] is not None:
+                    merged_data[key] = test_info[key]
+            
+            # Ensure test_id is always preserved
+            merged_data['test_id'] = test_id
+            
+            print(f"DEBUG: Successfully loaded test: {test_id}")
+            test_data.append(merged_data)
             successful_loads += 1
             
         except Exception as e:
@@ -485,8 +498,18 @@ def load_all_test_data(tests_dir=None):
     if test_data:
         df = pd.DataFrame(test_data)
         
-        # Sort by date and powder charge
-        df = df.sort_values(['date', 'powder_charge_gr'])
+        # Sort by date and powder charge, handling None values properly
+        try:
+            # Fill NaN values for sorting
+            df_sorted = df.copy()
+            df_sorted['date'] = df_sorted['date'].fillna('1900-01-01')
+            df_sorted['powder_charge_gr'] = pd.to_numeric(df_sorted['powder_charge_gr'], errors='coerce').fillna(0)
+            df_sorted = df_sorted.sort_values(['date', 'powder_charge_gr'])
+            
+            # Use the sorted index to reorder the original dataframe
+            df = df.loc[df_sorted.index]
+        except Exception as e:
+            print(f"Warning: Could not sort DataFrame: {e}")
         
         print(f"DEBUG: Created DataFrame with {len(df)} rows and {len(df.columns)} columns")
         return df

@@ -78,6 +78,11 @@ This document records all notable changes to the Precision Rifle Load Developmen
   - Selection follows moved items for better UX
   - Auto-save functionality preserves order in Lists.yaml
   - Order is maintained across all dropdown menus in the application
+- **Smart Date Filter Management**: Fixed issue where newly created tests would disappear from the View Test table after editing and saving
+  - Implemented intelligent date range expansion that automatically includes saved test dates in the filter range
+  - Enhanced data loading logic with robust fallback handling for newly created tests
+  - Added comprehensive debugging system to track data loading and filtering processes
+  - Tests now remain visible in the table after editing without requiring application restart
 
 ### Changed
 - Improved settings management with platform-specific storage locations
